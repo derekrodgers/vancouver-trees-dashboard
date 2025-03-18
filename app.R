@@ -198,6 +198,31 @@ server <- function(input, output, session) {
   observe({
     data <- filtered_data()
 
+    observeEvent(input$tree_map_marker_click, {
+        click <- input$tree_map_marker_click
+        if (is.null(click)) return()  # No click detected
+
+        # Find the tree closest to the clicked location
+        clicked_tree <- filtered_data() |>
+          mutate(
+            lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+            lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+          ) |>
+          arrange(abs(lng - click$lng) + abs(lat - click$lat)) |>
+          slice(1)  # Closest tree
+
+        if (nrow(clicked_tree) == 1) {
+          updatePickerInput(session, "neighbourhood", selected = clicked_tree$NEIGHBOURHOOD_NAME)
+          updatePickerInput(session, "height_range", selected = clicked_tree$HEIGHT_RANGE)
+          updatePickerInput(session, "binomial_name", selected = clicked_tree$Binomial_Name)
+          updatePickerInput(session, "common_name", selected = clicked_tree$COMMON_NAME)
+
+          # Update table selections
+          selected_species(clicked_tree$Binomial_Name)
+          selected_tree(clicked_tree$TREE_ID)
+        }
+    })
+
     if (nrow(data) > 0) {
       # Extract coordinates
       coords <- as.data.frame(do.call(rbind, strsplit(data$geo_point_2d, ", ")))
