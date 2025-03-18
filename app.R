@@ -47,14 +47,14 @@ ui <- fluidPage(
     column(5, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Height Category Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
+               h3("Tree Height", style = "margin-top: 1px; margin-bottom: 1px;"),
                plotlyOutput("height_distribution", height = "500px")
            )
     ),
     column(7, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Count by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
                plotlyOutput("heatmap", height = "500px")
            )
     )
@@ -65,7 +65,7 @@ ui <- fluidPage(
     column(5,  
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Counts by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
+               h3("Tree Count by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
                fluidRow(
                  column(12, div(style = "display: flex; align-items: center;",
                                 actionButton("reset_species", "Reset Selection", class = "btn btn-info btn-sm"),
@@ -91,6 +91,7 @@ ui <- fluidPage(
            )
     )
   )
+)
 
 server <- function(input, output, session) {
   selected_species <- reactiveVal(NULL)
@@ -195,7 +196,7 @@ server <- function(input, output, session) {
     ggplotly(plot, tooltip = "text")  # tooltips
   })
 
-  # Height Category Distribution (Ordered)
+  # Tree Height Distribution (All Neighbourhoods)
   output$height_distribution <- renderPlotly({
     data <- filtered_data() |>
       count(HEIGHT_RANGE)  # Compute counts beforehand
