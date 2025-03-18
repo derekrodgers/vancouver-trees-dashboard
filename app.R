@@ -44,38 +44,24 @@ ui <- fluidPage(
 
   # First chart row
   fluidRow(
-    column(7, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Count by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "500px")
-           )
-    ),
     column(5, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("Height Category Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
                plotlyOutput("height_distribution", height = "500px")
            )
+    ),
+    column(7, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Count by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("heatmap", height = "500px")
+           )
     )
   ),
 
   # Second chart row
   fluidRow(
-    column(7,  
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
-               fluidRow(
-                 column(12, div(style = "display: flex; align-items: center;",
-                                actionButton("reset_tree", "Reset Selection", class = "btn btn-info btn-sm"),
-                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
-                 ))
-               ),
-               br(),  
-               DTOutput("all_trees_table")
-           )
-    ),
     column(5,  
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
@@ -89,9 +75,22 @@ ui <- fluidPage(
                br(),  
                DTOutput("tree_table")
            )
+    ),
+    column(7,  
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
+               fluidRow(
+                 column(12, div(style = "display: flex; align-items: center;",
+                                actionButton("reset_tree", "Reset Selection", class = "btn btn-info btn-sm"),
+                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
+                 ))
+               ),
+               br(),  
+               DTOutput("all_trees_table")
+           )
     )
   )
-)
 
 server <- function(input, output, session) {
   selected_species <- reactiveVal(NULL)
