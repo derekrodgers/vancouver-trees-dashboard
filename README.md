@@ -1,13 +1,5 @@
 # Vancouver Street Trees Dashboard
 
-## Motivation
-
-**Target Audience:** Arborists at the Vancouver Board of Parks and Recreation.
-
-Street trees provide essential environmental and social benefits, including air quality improvement, urban cooling, and aesthetic enhancement. However, some neighbourhoods may have less tree coverage than others, impacting the overall urban canopy. This dashboard allows arborists to explore Vancouver's public street tree dataset to identify areas with lower tree coverage, assess species diversity, and make informed decisions about where new trees should be planted.
-
-## App Description
-
 The **Vancouver Street Trees Dashboard** is an interactive Shiny app that enables users to:
 
 - Filter street trees by **neighbourhood, height category, binomial species name, and common name**.
@@ -20,7 +12,6 @@ The app is built using R and Shiny, with visualization support from `plotly` and
 
 ## Demo
 
-https://github.ubc.ca/mds-2024-25/DSCI_532_individual-assignment_rodgersd/assets/3428/abf78235-a4a3-40fa-a43e-94555d46acc1
 
 ## Dataset
 
@@ -32,7 +23,7 @@ The data used in this dashboard comes from the **City of Vancouver's Public Tree
 
 You can try the live version of the app here:
 
-🔗 **[Vancouver Street Trees Dashboard](https://derekrodgers.shinyapps.io/vancouver-street-trees/)**
+🔗 **[Vancouver Street Trees Dashboard](https://)**
 
 ## Local Installation
 
@@ -41,8 +32,8 @@ If you'd like to run this app locally, follow these steps:
 ### 1. Clone the Repository
 
 ```sh
-git clone https://github.ubc.ca/mds-2024-25/DSCI_532_individual-assignment_rodgersd.git
-cd DSCI_532_individual-assignment_rodgersd
+git clone https://github.com/derekrodgers/vancouver-trees-dahboard.git
+cd vancouver-trees-dahboard
 ```
 ### 2. Install Dependencies
 
