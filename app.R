@@ -23,7 +23,7 @@ ui <- fluidPage(
                                choices = unique(street_trees$NEIGHBOURHOOD_NAME),
                                multiple = TRUE,
                                options = list(`actions-box` = TRUE, `live-search` = TRUE)),
-                   pickerInput("height_range", "Height Category",
+                   pickerInput("height_range", "Height Range",
                                choices = levels(street_trees$HEIGHT_RANGE),
                                multiple = TRUE,
                                options = list(`actions-box` = TRUE, `live-search` = TRUE)),
@@ -190,7 +190,7 @@ server <- function(input, output, session) {
                                                    "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
       geom_tile() +
       scale_fill_gradient(low = "white", high = "blue") +
-      labs(x = "Height Category", y = "Neighbourhood", fill = "Tree Count") +
+      labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
       theme_minimal()
   
     ggplotly(plot, tooltip = "text")  # tooltips
@@ -202,7 +202,7 @@ server <- function(input, output, session) {
       count(HEIGHT_RANGE)  # Compute counts beforehand
   
     plot <- ggplot(data, aes(x = HEIGHT_RANGE, y = n, 
-                             text = paste0("<b>Height Category</b>: ", HEIGHT_RANGE, "<br>",
+                             text = paste0("<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
                                            "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
       geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
       labs(x = "Height Range", y = "Tree Count") +
