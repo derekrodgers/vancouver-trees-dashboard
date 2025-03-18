@@ -4,9 +4,9 @@ source("global.R")
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
 # To deploy:
-#     rsconnect::deployApp(appDir = ".", appName = "vancouver-street-trees")
+#     rsconnect::deployApp(appDir = ".", appName = "vancouver-trees-dashboard")
 # Deploy location:
-#     https://derekrodgers.shinyapps.io/vancouver-street-trees
+#     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
 
 ui <- fluidPage(
   title = "Vancouver Street Trees Dashboard",
