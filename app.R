@@ -1,10 +1,21 @@
+library(raster)  # Load first (so it doesn't mask later)
 library(shiny)
-library(tidyverse)
-library(shiny)
+
+library(raster)  # Load first
+library(dplyr)   # Load after to prevent function masking
+
 library(shinyWidgets)
 library(ggplot2)
 library(DT)
 library(plotly)
+# Map
+library(leaflet)
+library(spatstat)  # For spatial point patterns
+library(gstat)      # For kriging interpolation
+library(sp)         # For spatial data structures
+library(raster)     # For rasterizing interpolation results
+library(leaflet.extras)  # For heatmap layers in Leaflet
+library(tidyverse)
 
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
@@ -108,6 +119,17 @@ ui <- fluidPage(
                DTOutput("all_trees_table")
            )
     )
+  ),
+
+  # Map Row (Hidden Outputs, Only Input Dependent)
+  fluidRow(
+    column(12, 
+          div(class = "panel panel-default", 
+              style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+              h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),  
+              leafletOutput("tree_map", height = "600px")
+          )
+    )
   )
 )
 
@@ -165,33 +187,96 @@ server <- function(input, output, session) {
     return(data)
   })
 
+  # Render Map (Initially Empty, Will Update via Proxy)
+  output$tree_map <- renderLeaflet({
+    leaflet() |>
+      addTiles() |>
+      setView(lng = -123.1216, lat = 49.2827, zoom = 12)  # Default to Vancouver
+  })
+
   # Dynamic filter updates
   observe({
     data <- filtered_data()
 
-    # Preserve all neighbourhood choices, but disable unavailable ones
-    updatePickerInput(session, "neighbourhood", 
-                      choices = unique(street_trees$NEIGHBOURHOOD_NAME),  # Show all neighbourhoods
-                      selected = input$neighbourhood,
-                      options = list(
-                        `actions-box` = TRUE,
-                        `live-search` = TRUE,
-                        `selected-text-format` = "count > 1",
-                        `max-options` = length(unique(street_trees$NEIGHBOURHOOD_NAME)),  # Ensures all are selectable
-                        `virtual-scroll` = 10
-                      ))
+    if (nrow(data) > 0) {
+      # Extract coordinates
+      coords <- as.data.frame(do.call(rbind, strsplit(data$geo_point_2d, ", ")))
+      names(coords) <- c("lat", "lng")
+      coords <- mutate(coords, lat = as.numeric(lat), lng = as.numeric(lng)) |> drop_na(lat, lng)
 
-    updatePickerInput(session, "height_range", 
-                      choices = levels(street_trees$HEIGHT_RANGE), 
-                      selected = input$height_range)
+      if (nrow(coords) == 0) return()  # Exit if no valid coordinates
 
-    updatePickerInput(session, "binomial_name", 
-                      choices = unique(street_trees$Binomial_Name), 
-                      selected = input$binomial_name)
+      # Convert to spatial points
+      coordinates(coords) <- ~lng+lat
+      proj4string(coords) <- CRS("+proj=longlat +datum=WGS84")
 
-    updatePickerInput(session, "common_name", 
-                      choices = unique(street_trees$COMMON_NAME), 
-                      selected = input$common_name)
+      if (is.null(coords) || nrow(coords) == 0 || !("lng" %in% names(coords)) || !("lat" %in% names(coords)) ||
+          anyNA(coords$lng) || anyNA(coords$lat)) {
+        print("No valid tree coordinates available. Skipping kriging.")
+        return()  # Exit observer safely
+      }
+
+      grid_size <- ifelse(nrow(coords) > 10000, 50, 100)  # Ensure it's always numeric
+
+      grid <- expand.grid(
+        lng = seq(min(coords$lng, na.rm = TRUE), max(coords$lng, na.rm = TRUE), length.out = grid_size),  
+        lat = seq(min(coords$lat, na.rm = TRUE), max(coords$lat, na.rm = TRUE), length.out = grid_size)
+      )
+      coordinates(grid) <- ~lng+lat
+      proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
+
+      # Compute Tree Density (Number of Trees per Grid Cell)
+      density_counts <- as.data.frame(table(cut(coords$lng, 50), cut(coords$lat, 50)))
+      names(density_counts) <- c("lng_bin", "lat_bin", "tree_density")
+
+      # Merge Density with Grid
+      grid_df <- as.data.frame(grid)
+      density_counts <- merge(grid_df, density_counts, by.x = c("lng", "lat"), by.y = c("lng_bin", "lat_bin"), all.x = TRUE)
+      density_counts$tree_density[is.na(density_counts$tree_density)] <- 0  # Fill NAs with 0
+
+      # Convert to Spatial Data
+      coordinates(density_counts) <- ~lng+lat
+      proj4string(density_counts) <- CRS("+proj=longlat +datum=WGS84")
+
+      # Kriging Interpolation for Tree Density
+      print("Starting kriging...")  # Debugging statement
+
+      kriging_model <- gstat::gstat(
+        formula = tree_density ~ 1, locations = density_counts, nmax = 10, set = list(idp = 2)
+      )
+
+      print("Kriging model created. Running prediction...")  # Debugging statement
+      flush.console()  # Forces print output
+
+      interpolated <- predict(kriging_model, grid)
+
+      print("Prediction complete!")  # Debugging statement
+      flush.console()
+
+      # Convert to raster for heatmap rendering
+      if (is.na(crs(rast))) {
+        crs(rast) <- CRS("+proj=longlat +datum=WGS84")  # Set projection explicitly
+      } else if (crs(rast)@projargs != "+proj=longlat +datum=WGS84") {
+        rast <- projectRaster(rast, crs = CRS("+proj=longlat +datum=WGS84"))  # Reproject if incorrect CRS
+      }
+
+      max_val <- max(interpolated$var1.pred, na.rm = TRUE)
+      min_val <- min(interpolated$var1.pred, na.rm = TRUE)
+
+      if (max_val == min_val) {  
+        interpolated$var1.pred <- 0  # Set to zero if no variation  
+      } else {
+        interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
+      }
+
+      pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")  # Normalize domain
+
+      # Update Leaflet map with Heatmap
+      leafletProxy("tree_map") |>
+        clearHeatmap() |>  
+        addRasterImage(rast, colors = pal, opacity = 0.7) |>
+        addLegend(pal = pal, values = interpolated$var1.pred, title = "Tree Density")
+    }
   })
 
   # Heatmap of Tree Count x Neighbourhood
@@ -258,7 +343,7 @@ server <- function(input, output, session) {
       ) |>
       arrange(desc(Count))
   
-    datatable(data |> select(Count, `Binomial_Link`, `Common Names`),  
+    datatable(data |> dplyr::select(Count, `Binomial_Link`, `Common Names`),  
           escape = FALSE,
           colnames = c("Count", "Binomial Name", "Common Names"),
           options = list(
@@ -282,10 +367,10 @@ server <- function(input, output, session) {
       ) |>
       arrange(desc(Count))  # Sort for display
   
-    if (!is.null(selected_row) && length(selected_row) > 0) {
-      species <- displayed_data$Binomial_Name[selected_row]  # Extract species name
+    if (!is.null(selected_row) && length(selected_row) > 0 && selected_row <= nrow(displayed_data)) {
+      species <- displayed_data$Binomial_Name[selected_row]  
       selected_species(species)
-      selected_tree(NULL)  # Clear tree selection if species is chosen
+      selected_tree(NULL)  
     }
   })
   
@@ -310,7 +395,7 @@ server <- function(input, output, session) {
       ) |>
       dplyr::select(-geo_point_2d)  
   
-    datatable(data |> select(TREE_ID, `Binomial_Link`, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, `Google Maps Link`),  
+    datatable(data |> dplyr::select(TREE_ID, `Binomial_Link`, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, `Google Maps Link`),  
               escape = FALSE,
               colnames = c("Tree ID", "Binomial Name", "Common Name", "Neighbourhood", "Height Range", "Google Maps Link"),
               options = list(
@@ -348,6 +433,26 @@ server <- function(input, output, session) {
   
     paste("Total Trees:", format(num_trees, big.mark = ","))
   })
+
+  observe({
+    data <- filtered_data()
+    print(paste("Filtered Data Rows:", nrow(data)))  # Debugging output
+
+    data <- data |> mutate(
+      lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+      lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+    )
+
+    leafletProxy("tree_map", data = data) |>
+      clearMarkers() |>
+      clearMarkerClusters() |>
+      addMarkers(
+        lng = ~lng,
+        lat = ~lat,
+        clusterOptions = markerClusterOptions()
+      )
+  })
+
 }
 
 shinyApp(ui, server)
