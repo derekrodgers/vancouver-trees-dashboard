@@ -6,6 +6,14 @@ library(ggplot2)
 library(DT)
 library(plotly)
 
+# For kriging
+library(sp)
+library(gstat)
+library(stars)
+library(leaflet)
+library(leafem)
+library(viridisLite)
+
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
 # To deploy:
@@ -57,6 +65,19 @@ ui <- fluidPage(
                                 style = "white-space: nowrap; padding: 6px 12px;")
                )
            )
+    )
+  ),
+
+  # NEW MAP ROW
+  fluidRow(
+    column(12,
+      div(
+        class = "panel panel-default",
+        style = "background-color: #ffffff; padding: 10px; border-radius: 8px; 
+                 box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 10px;",
+        h3("Tree Diameter Interpolation (Kriging)"),
+        leafletOutput("map_kriging", height = "500px")
+      )
     )
   ),
 
@@ -112,6 +133,16 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+
+  # 1) If you haven’t done so already, parse lat/lon into numeric columns
+  street_trees_cleaned <- reactive({
+    street_trees %>%
+      mutate(
+        lat = as.numeric(sub(",.*$", "", geo_point_2d)),
+        lon = as.numeric(sub("^.*, ", "", geo_point_2d))
+      )
+  })
+
   selected_species <- reactiveVal(NULL)
   selected_tree <- reactiveVal(NULL)
 
@@ -348,6 +379,52 @@ server <- function(input, output, session) {
   
     paste("Total Trees:", format(num_trees, big.mark = ","))
   })
+  
+  # -- BEGIN KRIGING REACTIVE --
+  kriging_result <- reactive({
+    data <- filtered_data() %>%
+      mutate(
+        lat = as.numeric(sub(",.*$", "", geo_point_2d)),
+        lon = as.numeric(sub("^.*, ", "", geo_point_2d))
+      ) %>%
+      filter(!is.na(DIAMETER), !is.na(lat), !is.na(lon))
+  
+    sp::coordinates(data) <- ~ lon + lat
+    sp::proj4string(data) <- sp::CRS("+init=epsg:4326")
+  
+    # Build and fit a variogram to DIAMETER
+    vg <- gstat::variogram(DIAMETER ~ 1, data)
+    fit <- gstat::fit.variogram(vg, model = gstat::vgm("Exp"))
+  
+    # Create a grid covering the bounding box
+    bbox <- sp::bbox(data)
+    lon_seq <- seq(bbox["x", "min"], bbox["x", "max"], by = 0.01)
+    lat_seq <- seq(bbox["y", "min"], bbox["y", "max"], by = 0.01)
+    grid_df <- expand.grid(lon = lon_seq, lat = lat_seq)
+    sp::coordinates(grid_df) <- ~ lon + lat
+    sp::proj4string(grid_df) <- sp::CRS("+init=epsg:4326")
+  
+    # Kriging prediction
+    g <- gstat::gstat(formula = DIAMETER ~ 1, data = data, model = fit)
+    pred <- predict(g, grid_df)
+    sp::gridded(pred) <- TRUE
+  
+    # Convert to a stars object for plotting
+    r <- stars::st_as_stars(pred["var1.pred"])
+    r
+  })
+  # -- END KRIGING REACTIVE --
+  
+  # -- BEGIN LEAFLET RENDERING --
+  output$map_kriging <- renderLeaflet({
+    r <- kriging_result()
+  
+    leaflet() %>%
+      addTiles() %>%
+      leafem::addStarsImage(r, colors = viridisLite::viridis(100), project = TRUE, opacity = 0.7) %>%
+      setView(lng = -123.1, lat = 49.25, zoom = 11)
+  })
+  # -- END LEAFLET RENDERING --
 }
 
 shinyApp(ui, server)
