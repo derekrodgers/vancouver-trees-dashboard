@@ -10,9 +10,6 @@ The **Vancouver Street Trees Dashboard** is an interactive Shiny app that enable
 
 The app is built using R and Shiny, with visualization support from `plotly` and `ggplot2`.
 
-## Demo
-
-
 ## Dataset
 
 The data used in this dashboard comes from the **City of Vancouver's Public Trees Dataset**, available at:
