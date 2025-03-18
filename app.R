@@ -47,7 +47,7 @@ ui <- fluidPage(
     column(5, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height", style = "margin-top: 1px; margin-bottom: 1px;"),
+               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
                plotlyOutput("height_distribution", height = "500px")
            )
     ),
@@ -240,17 +240,17 @@ server <- function(input, output, session) {
       ) |>
       arrange(desc(Count))
   
-    datatable(data |> select(`Binomial_Link`, `Common Names`, Count),  
-              escape = FALSE,
-              colnames = c("Binomial Name", "Common Names", "Count"),
-              options = list(
-                pageLength = 100,
-                lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
-                                  c("10", "25", "50", "100", "250", "500", "750")),
-                autoWidth = TRUE,
-                searchHighlight = TRUE,
-                scrollY = "517px"
-              ))
+    datatable(data |> select(Count, `Binomial_Link`, `Common Names`),  
+          escape = FALSE,
+          colnames = c("Count", "Binomial Name", "Common Names"),
+          options = list(
+            pageLength = 100,
+            lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
+                              c("10", "25", "50", "100", "250", "500", "750")),
+            autoWidth = TRUE,
+            searchHighlight = TRUE,
+            scrollY = "517px"
+          ))
   })
   
   # Handle species selection from table clicks
