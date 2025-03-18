@@ -1,10 +1,5 @@
 library(shiny)
-library(tidyverse)
-library(shiny)
-library(shinyWidgets)
-library(ggplot2)
-library(DT)
-library(plotly)
+source("global.R")
 
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
@@ -12,19 +7,6 @@ library(plotly)
 #     rsconnect::deployApp(appDir = ".", appName = "vancouver-trees-dashboard")
 # Deploy location:
 #     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
-
-street_trees <- read_csv2("data/raw/street-trees.csv")
-
-# Concatenate Genus + Species for Binomial Name
-street_trees <- street_trees |>
-  mutate(
-    Binomial_Name = paste(GENUS_NAME, SPECIES_NAME),
-    HEIGHT_RANGE = factor(HEIGHT_RANGE, levels = c(
-      "0' - 10'", "10' - 20'", "20' - 30'", "30' - 40'", 
-      "40' - 50'", "50' - 60'", "60' - 70'", "70' - 80'", 
-      "80' - 90'", "90' - 100'", "> 100'"
-    ), ordered = TRUE)
-  )
 
 ui <- fluidPage(
   title = "Vancouver Street Trees Dashboard",
@@ -56,6 +38,17 @@ ui <- fluidPage(
                    actionButton("reset_filters", "Reset Filters", class = "btn btn-info btn-sm", 
                                 style = "white-space: nowrap; padding: 6px 12px;")
                )
+           )
+    )
+  ),
+
+  # Map row
+  fluidRow(
+    column(12, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Street Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
+               leafletOutput("tree_map", height = "600px")
            )
     )
   ),
@@ -192,6 +185,28 @@ server <- function(input, output, session) {
     updatePickerInput(session, "common_name", 
                       choices = unique(street_trees$COMMON_NAME), 
                       selected = input$common_name)
+  })
+
+  output$tree_map <- renderLeaflet({
+    data <- filtered_data()  # Use the filtered dataset
+    
+    # Reduce dataset size if necessary (display max 5000 points)
+    if (nrow(data) > 5000) {
+      data <- data |> sample_n(5000)  
+    }
+  
+    # Create the map
+    leaflet(data) |>
+      addTiles() |>  # Add OpenStreetMap tiles
+      addMarkers(
+        lng = ~as.numeric(str_split(geo_point_2d, ", ")[[1]][2]),
+        lat = ~as.numeric(str_split(geo_point_2d, ", ")[[1]][1]),
+        clusterOptions = markerClusterOptions(),  # Enable clustering
+        popup = ~paste("<b>Tree ID:</b>", TREE_ID, "<br>",
+                       "<b>Species:</b>", Binomial_Name, "<br>",
+                       "<b>Common Name:</b>", COMMON_NAME, "<br>",
+                       "<b>Neighbourhood:</b>", NEIGHBOURHOOD_NAME)
+      )
   })
 
   # Heatmap of Tree Count x Neighbourhood
