@@ -4,6 +4,7 @@ library(shinyWidgets)
 library(ggplot2)
 library(DT)
 library(plotly)
+library(later)
 
 # Map
 library(raster)  # Load first (so it doesn't mask later)
@@ -160,9 +161,17 @@ ui <- fluidPage(
 
   # Fix popup / zoom conflict
   tags$script(HTML('
+    // Custom handler to open popup after zoom
     Shiny.addCustomMessageHandler("openPopupAfterZoom", function(message) {
       var map = window.treeMap;
       if (!map) return;
+      // Capture current view if not already saved
+      if (!window.prevView) {
+        window.prevView = {
+          center: map.getCenter(),
+          zoom: map.getZoom()
+        };
+      }
       map.once("zoomend", function() {
         var markerFound = null;
         map.eachLayer(function(layer) {
@@ -172,8 +181,21 @@ ui <- fluidPage(
         });
         if (markerFound) {
           markerFound.bindPopup(message.content).openPopup();
+          // Attach listener on this marker for popup close
+          markerFound.on("popupclose", function(e) {
+            Shiny.setInputValue("popup_closed", new Date().getTime(), {priority: "event"});
+          });
         }
       });
+    });
+    
+    // Custom handler to restore previous map view
+    Shiny.addCustomMessageHandler("restorePrevMapView", function(message) {
+      var map = window.treeMap;
+      if (map && window.prevView) {
+        map.setView(window.prevView.center, window.prevView.zoom);
+        window.prevView = null;  // Clear stored view after restoration
+      }
     });
   '))
 )
@@ -181,6 +203,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   selected_species <- reactiveVal(NULL)
   selected_tree <- reactiveVal(NULL)
+  restoring_view <- reactiveVal(FALSE)
 
   observeEvent(input$reset_filters, {
     updatePickerInput(session, "neighbourhood", selected = character(0))  # Reset to no selection
@@ -236,7 +259,7 @@ server <- function(input, output, session) {
   output$tree_map <- renderLeaflet({
     leaflet() |>
       addTiles() |>
-      setView(lng = -123.1216, lat = 49.2827, zoom = 12) |>
+      setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
       htmlwidgets::onRender("function(el, x) { window.treeMap = this; }")
   })
 
@@ -487,6 +510,9 @@ server <- function(input, output, session) {
   })
 
 observe({
+  # Skip view updates if we're in the middle of restoring the view.
+  if (restoring_view()) return()
+  
   data <- filtered_data()
   print(paste("Filtered Data Rows:", nrow(data)))  # Debug output
 
@@ -512,7 +538,7 @@ observe({
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions()
         ) |>
-        setView(lng = data$lng, lat = data$lat, zoom = 17)
+        setView(lng = data$lng, lat = data$lat, zoom = 15)
     } else {
       leafletProxy("tree_map", data = data) |>
         clearMarkers() |>
@@ -526,7 +552,6 @@ observe({
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
     }
   } else {
-    # If no data is available, reset to a default view
     leafletProxy("tree_map") |>
       clearMarkers() |>
       clearMarkerClusters() |>
@@ -539,14 +564,47 @@ observe({
     if (!is.null(event$id)) {
       selected_tree(event$id)
       selected_species(NULL)  # Clear species selection if a tree is chosen
-      session$sendCustomMessage("openPopupAfterZoom", 
-                                list(id = event$id, content = as.character(event$id)))
+      
+      # Look up the tree information from the filtered data
+      tree_info <- filtered_data() |> dplyr::filter(TREE_ID == event$id) |> dplyr::slice(1)
+      
+      if(nrow(tree_info) > 0) {
+        content <- paste0(
+          "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
+          "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
+            "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), 
+            "' target='_blank'>wiki</a>)<br>",
+          "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
+          "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
+          "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", 
+            tree_info$geo_point_2d, "' target='_blank'>View</a>"
+        )
+      } else {
+        content <- "No tree info found."
+      }
+      
+      session$sendCustomMessage("openPopupAfterZoom", list(id = event$id, content = content))
     }
   })
 
-observeEvent(input$reset_map, {
-  selected_tree(NULL)
-})
+  observeEvent(input$reset_map, {
+    selected_tree(NULL)
+    later::later(function() {
+      session$sendCustomMessage("restorePrevMapView", list())
+    }, delay = 0.2)
+  })
+
+  observeEvent(input$popup_closed, {
+    restoring_view(TRUE)
+    # Delay clearing the selection and sending restore message
+    later::later(function() {
+      selected_tree(NULL)
+      session$sendCustomMessage("restorePrevMapView", list())
+    }, delay = 0.8)
+    later::later(function() {
+      restoring_view(FALSE)
+    }, delay = 1.2)
+  })
 
 }
 
