@@ -25,10 +25,30 @@ library(leaflet.extras)  # For heatmap layers in Leaflet
 
 street_trees <- read_csv2("data/raw/street-trees.csv")
 
-# Concatenate Genus + Species for Binomial Name
+# Preprocessing
+capitalize_hyphenated <- function(x) {
+  x <- tolower(x)
+  # This regex uppercases the first letter of the string and every letter following a hyphen.
+  gsub("(^|-)([a-z])", "\\1\\U\\2", x, perl = TRUE)
+}
+
 street_trees <- street_trees |>
   mutate(
-    Binomial_Name = paste(GENUS_NAME, SPECIES_NAME),
+    # Construct Binomial_Name: capitalize genus and make species lowercase, then remove trailing " x"
+    Binomial_Name = paste0(
+      toupper(substr(GENUS_NAME, 1, 1)),
+      tolower(substr(GENUS_NAME, 2, nchar(GENUS_NAME))),
+      " ",
+      tolower(SPECIES_NAME)
+    ),
+    Binomial_Name = gsub(" x$", "", Binomial_Name),
+    
+    # Convert common names to title case
+    COMMON_NAME = str_to_title(COMMON_NAME),
+    
+    # Convert neighbourhood names to title case
+    NEIGHBOURHOOD_NAME = str_to_title(NEIGHBOURHOOD_NAME),
+    
     HEIGHT_RANGE = factor(
       str_replace_all(HEIGHT_RANGE, " ", ""),  # Remove spaces
       levels = c(
@@ -147,10 +167,11 @@ ui <- fluidPage(
               h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
               fluidRow(
                 column(12, 
-                        div(style = "display: flex; align-items: center;",
-                            actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
-                            span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
-                        )
+                  div(style = "display: flex; align-items: center;",
+                    actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
+                    actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
+                    span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
+                  )
                 )
               ),
               br(),
@@ -206,13 +227,32 @@ server <- function(input, output, session) {
   restoring_view <- reactiveVal(FALSE)
 
   observeEvent(input$reset_filters, {
-    updatePickerInput(session, "neighbourhood", selected = character(0))  # Reset to no selection
+    updatePickerInput(session, "neighbourhood", selected = character(0))
     updatePickerInput(session, "height_range", selected = character(0))
     updatePickerInput(session, "binomial_name", selected = character(0))
     updatePickerInput(session, "common_name", selected = character(0))
-  
-    selected_species(NULL)  # Reset selected species in table
-    selected_tree(NULL)  # Reset selected tree in table
+    
+    selected_species(NULL)
+    selected_tree(NULL)
+    
+    # Reset the map zoom/pan to show all current points:
+    data <- filtered_data()
+    if(nrow(data) > 0) {
+      data <- data |> mutate(
+        lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+        lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+      )
+      minLng <- min(data$lng, na.rm = TRUE)
+      maxLng <- max(data$lng, na.rm = TRUE)
+      minLat <- min(data$lat, na.rm = TRUE)
+      maxLat <- max(data$lat, na.rm = TRUE)
+      
+      leafletProxy("tree_map", data = data) |>
+        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+    } else {
+      leafletProxy("tree_map") |>
+        setView(lng = -123.1216, lat = 49.2827, zoom = 12)
+    }
   })
 
   # Reset species selection
@@ -394,15 +434,10 @@ server <- function(input, output, session) {
         `Common Names` = paste(unique(COMMON_NAME[order(-Count_Common_Name)]), collapse = ", "),
         Count = sum(Count_Common_Name)
       ) |>
-      mutate(
-        # Capitalize first word, lowercase second word (otherwise link doesn't work)
+            mutate(
         `Binomial_Link` = paste0(
           "<a href='https://en.wikipedia.org/wiki/",
-          gsub(" ", "_", 
-               paste0(
-                 toupper(substr(Binomial_Name, 1, 1)),  # Uppercase first letter
-                 tolower(substr(Binomial_Name, 2, nchar(Binomial_Name)))  # Lowercase rest
-               )),
+          gsub(" ", "_", Binomial_Name),
           "' target='_blank'>", Binomial_Name, "</a>"
         ),
         `Common Names` = ifelse(nchar(`Common Names`) > 75, 
@@ -412,9 +447,9 @@ server <- function(input, output, session) {
       ) |>
       arrange(desc(Count))
   
-    datatable(data |> dplyr::select(`Binomial_Link`, `Common Names`, Count),  
+    datatable(data |> dplyr::select(Count, `Binomial_Link`, `Common Names`),  
               escape = FALSE,
-              colnames = c("Binomial Name", "Common Names", "Count"),
+              colnames = c("Count", "Binomial Name", "Common Names"),
               options = list(
                 pageLength = 100,
                 lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
@@ -570,10 +605,10 @@ observe({
       
       if(nrow(tree_info) > 0) {
         content <- paste0(
-          "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
           "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
             "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), 
             "' target='_blank'>wiki</a>)<br>",
+          "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
           "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
           "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
           "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", 
@@ -592,6 +627,26 @@ observe({
     later::later(function() {
       session$sendCustomMessage("restorePrevMapView", list())
     }, delay = 0.2)
+  })
+
+  observeEvent(input$reset_zoom, {
+    data <- filtered_data()
+    if(nrow(data) > 0) {
+      data <- data |> mutate(
+        lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+        lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+      )
+      minLng <- min(data$lng, na.rm = TRUE)
+      maxLng <- max(data$lng, na.rm = TRUE)
+      minLat <- min(data$lat, na.rm = TRUE)
+      maxLat <- max(data$lat, na.rm = TRUE)
+      
+      leafletProxy("tree_map", data = data) |>
+        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+    } else {
+      leafletProxy("tree_map") |>
+        setView(lng = -123.1216, lat = 49.2827, zoom = 12)
+    }
   })
 
 }
