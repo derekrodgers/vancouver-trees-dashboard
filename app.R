@@ -594,18 +594,6 @@ observe({
     }, delay = 0.2)
   })
 
-  observeEvent(input$popup_closed, {
-    restoring_view(TRUE)
-    # Delay clearing the selection and sending restore message
-    later::later(function() {
-      selected_tree(NULL)
-      session$sendCustomMessage("restorePrevMapView", list())
-    }, delay = 0.8)
-    later::later(function() {
-      restoring_view(FALSE)
-    }, delay = 1.2)
-  })
-
 }
 
 options(shiny.autoreload = TRUE)
