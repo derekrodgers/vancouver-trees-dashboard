@@ -1,21 +1,19 @@
-library(raster)  # Load first (so it doesn't mask later)
 library(shiny)
-
-library(raster)  # Load first
-library(dplyr)   # Load after to prevent function masking
-
+library(tidyverse)
 library(shinyWidgets)
 library(ggplot2)
 library(DT)
 library(plotly)
+
 # Map
+library(raster)  # Load first (so it doesn't mask later)
 library(leaflet)
 library(spatstat)  # For spatial point patterns
 library(gstat)      # For kriging interpolation
 library(sp)         # For spatial data structures
 library(raster)     # For rasterizing interpolation results
 library(leaflet.extras)  # For heatmap layers in Leaflet
-library(tidyverse)
+
 
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
@@ -31,11 +29,15 @@ street_trees <- read_csv2("data/raw/street-trees.csv")
 street_trees <- street_trees |>
   mutate(
     Binomial_Name = paste(GENUS_NAME, SPECIES_NAME),
-    HEIGHT_RANGE = factor(HEIGHT_RANGE, levels = c(
-      "0' - 10'", "10' - 20'", "20' - 30'", "30' - 40'", 
-      "40' - 50'", "50' - 60'", "60' - 70'", "70' - 80'", 
-      "80' - 90'", "90' - 100'", "> 100'"
-    ), ordered = TRUE)
+    HEIGHT_RANGE = factor(
+      str_replace_all(HEIGHT_RANGE, " ", ""),  # Remove spaces
+      levels = c(
+        "0'-10'", "10'-20'", "20'-30'", "30'-40'", 
+        "40'-50'", "50'-60'", "60'-70'", "70'-80'", 
+        "80'-90'", "90'-100'", ">100'"
+      ), 
+      ordered = TRUE
+    )
   )
 
 ui <- fluidPage(
@@ -78,14 +80,14 @@ ui <- fluidPage(
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("height_distribution", height = "500px")
+               plotlyOutput("height_distribution", height = "450px")
            )
     ),
     column(7, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "500px")
+               plotlyOutput("heatmap", height = "450px")
            )
     )
   ),
@@ -93,32 +95,40 @@ ui <- fluidPage(
   # Second chart row
   fluidRow(
     column(5,  
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Count by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
-               fluidRow(
-                 column(12, div(style = "display: flex; align-items: center;",
-                                actionButton("reset_species", "Reset Selection", class = "btn btn-info btn-sm"),
-                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("species_count_text"))
-                 ))
-               ),
-               br(),  
-               DTOutput("tree_table")
-           )
+      div(class = "panel panel-default", 
+          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; 
+                  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); height: 550px; 
+                  display: flex; flex-direction: column;",  
+          h3("Tree Count by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
+          fluidRow(
+            column(12, div(style = "display: flex; align-items: center;",
+                          actionButton("reset_species", "Reset Selection", class = "btn btn-info btn-sm"),
+                          span(style = "padding-left: 15px; font-size: 14px;", textOutput("species_count_text"))
+            ))
+          ),
+          br(),  
+          div(style = "flex-grow: 1; height: 100%; max-height: 100%; overflow-y: auto;",  
+              DTOutput("tree_table", width = "100%")
+          )
+      )
     ),
     column(7,  
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
-               fluidRow(
-                 column(12, div(style = "display: flex; align-items: center;",
-                                actionButton("reset_tree", "Reset Selection", class = "btn btn-info btn-sm"),
-                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
-                 ))
-               ),
-               br(),  
-               DTOutput("all_trees_table")
-           )
+      div(class = "panel panel-default", 
+          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; 
+                  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); height: 550px; 
+                  display: flex; flex-direction: column;",  
+          h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
+          fluidRow(
+            column(12, div(style = "display: flex; align-items: center;",
+                          actionButton("reset_tree", "Reset Selection", class = "btn btn-info btn-sm"),
+                          span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
+            ))
+          ),
+          br(),  
+          div(style = "flex-grow: 1; height: 100%; max-height: 100%; overflow-y: auto;",  
+              DTOutput("all_trees_table", width = "100%")
+          )
+      )
     )
   ),
 
@@ -362,8 +372,8 @@ server <- function(input, output, session) {
                )),
           "' target='_blank'>", Binomial_Name, "</a>"
         ),
-        `Common Names` = ifelse(nchar(`Common Names`) > 75, 
-                                paste0(substr(`Common Names`, 1, 75), "..."), 
+        `Common Names` = ifelse(nchar(`Common Names`) > 65, 
+                                paste0(substr(`Common Names`, 1, 65), "..."), 
                                 `Common Names`),
         Count = format(Count, big.mark = ",")
       ) |>
@@ -377,8 +387,7 @@ server <- function(input, output, session) {
             lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
                               c("10", "25", "50", "100", "250", "500", "750")),
             autoWidth = TRUE,
-            searchHighlight = TRUE,
-            scrollY = "517px"
+            searchHighlight = TRUE
           ))
   })
   
@@ -429,8 +438,7 @@ server <- function(input, output, session) {
                 lengthMenu = list(c(10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000), 
                                   c("10", "50", "100", "250", "500", "1K", "2.5K", "5K", "10K", "25K")),
                 autoWidth = TRUE,
-                searchHighlight = TRUE,
-                scrollY = "500px"
+                searchHighlight = TRUE
               ))
   })
   
@@ -481,4 +489,5 @@ server <- function(input, output, session) {
 
 }
 
-shinyApp(ui, server)
+options(shiny.autoreload = TRUE)
+shinyApp(ui, server, options = list(port = 3838))
