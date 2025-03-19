@@ -23,6 +23,7 @@ library(tidyverse)
 #     rsconnect::deployApp(appDir = ".", appName = "vancouver-trees-dashboard")
 # Deploy location:
 #     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
+#
 
 street_trees <- read_csv2("data/raw/street-trees.csv")
 
