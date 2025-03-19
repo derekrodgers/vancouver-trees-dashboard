@@ -45,32 +45,47 @@ ui <- fluidPage(
   # Filters row
   fluidRow(
     column(12, 
-           div(class = "panel panel-default", 
-               style = "background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 10px;",
-               h2("Vancouver Street Trees Dashboard", style = "margin-top: 0px; margin-bottom: 10px;"),
-               
-               # flexbox to arrange elements in one row
-               div(style = "display: flex; align-items: center; justify-content: space-between; gap: 10px;",
-                   pickerInput("neighbourhood", "Neighbourhood",
-                               choices = unique(street_trees$NEIGHBOURHOOD_NAME),
-                               multiple = TRUE,
-                               options = list(`actions-box` = TRUE, `live-search` = TRUE)),
-                   pickerInput("height_range", "Height Range",
-                               choices = levels(street_trees$HEIGHT_RANGE),
-                               multiple = TRUE,
-                               options = list(`actions-box` = TRUE, `live-search` = TRUE)),
-                   pickerInput("binomial_name", "Binomial Name",
-                               choices = unique(street_trees$Binomial_Name),
-                               multiple = TRUE,
-                               options = list(`actions-box` = TRUE, `live-search` = TRUE)),
-                   pickerInput("common_name", "Common Name",
-                               choices = unique(street_trees$COMMON_NAME),
-                               multiple = TRUE,
-                               options = list(`actions-box` = TRUE, `live-search` = TRUE)),
-                   actionButton("reset_filters", "Reset Filters", class = "btn btn-info btn-sm", 
-                                style = "white-space: nowrap; padding: 6px 12px;")
-               )
-           )
+          div(class = "panel panel-default", 
+              style = "background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 10px;",
+              
+              # Title Row
+              fluidRow(
+                column(12, h2("Vancouver Street Trees Dashboard", 
+                              style = "margin-top: 0px; margin-bottom: 15px; text-align: left;"))
+              ),
+
+              # Filters & Reset Button Row
+              fluidRow(
+                style = "margin-bottom: 0px;",  # Remove extra margin below row
+                column(10, 
+                      fluidRow(
+                        column(3, pickerInput("neighbourhood", "Neighbourhood",
+                                              choices = unique(street_trees$NEIGHBOURHOOD_NAME),
+                                              multiple = TRUE,
+                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                              width = "100%")),
+                        column(3, pickerInput("height_range", "Height Range",
+                                              choices = levels(street_trees$HEIGHT_RANGE),
+                                              multiple = TRUE,
+                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                              width = "100%")),
+                        column(3, pickerInput("binomial_name", "Binomial Name",
+                                              choices = unique(street_trees$Binomial_Name),
+                                              multiple = TRUE,
+                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                              width = "100%")),
+                        column(3, pickerInput("common_name", "Common Name",
+                                              choices = unique(street_trees$COMMON_NAME),
+                                              multiple = TRUE,
+                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                              width = "100%"))
+                      )
+                ),
+                column(2, div(style = "text-align: right; margin-top: 25px;",  
+                            actionButton("reset_filters", "Reset Filters", class = "btn-danger"))
+                )
+              )
+          )
     )
   ),
 
