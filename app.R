@@ -110,40 +110,32 @@ ui <- fluidPage(
   # Second chart row
   fluidRow(
     column(5,  
-      div(class = "panel panel-default", 
-          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; 
-                  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); height: 550px; 
-                  display: flex; flex-direction: column;",  
-          h3("Tree Count by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
-          fluidRow(
-            column(12, div(style = "display: flex; align-items: center;",
-                          actionButton("reset_species", "Reset Selection", class = "btn btn-info btn-sm"),
-                          span(style = "padding-left: 15px; font-size: 14px;", textOutput("species_count_text"))
-            ))
-          ),
-          br(),  
-          div(style = "flex-grow: 1; height: 100%; max-height: 100%; overflow-y: auto;",  
-              DTOutput("tree_table", width = "100%")
-          )
-      )
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Counts by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
+               fluidRow(
+                 column(12, div(style = "display: flex; align-items: center;",
+                                actionButton("reset_species", "Reset Selection", class = "btn btn-info btn-sm"),
+                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("species_count_text"))
+                 ))
+               ),
+               br(),  
+               DTOutput("tree_table")
+           )
     ),
     column(7,  
-      div(class = "panel panel-default", 
-          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; 
-                  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); height: 550px; 
-                  display: flex; flex-direction: column;",  
-          h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
-          fluidRow(
-            column(12, div(style = "display: flex; align-items: center;",
-                          actionButton("reset_tree", "Reset Selection", class = "btn btn-info btn-sm"),
-                          span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
-            ))
-          ),
-          br(),  
-          div(style = "flex-grow: 1; height: 100%; max-height: 100%; overflow-y: auto;",  
-              DTOutput("all_trees_table", width = "100%")
-          )
-      )
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
+               fluidRow(
+                 column(12, div(style = "display: flex; align-items: center;",
+                                actionButton("reset_tree", "Reset Selection", class = "btn btn-info btn-sm"),
+                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
+                 ))
+               ),
+               br(),  
+               DTOutput("all_trees_table")
+           )
     )
   ),
 
@@ -387,44 +379,27 @@ server <- function(input, output, session) {
                )),
           "' target='_blank'>", Binomial_Name, "</a>"
         ),
-        `Common Names` = ifelse(nchar(`Common Names`) > 65, 
-                                paste0(substr(`Common Names`, 1, 65), "..."), 
+        `Common Names` = ifelse(nchar(`Common Names`) > 75, 
+                                paste0(substr(`Common Names`, 1, 75), "..."), 
                                 `Common Names`),
         Count = format(Count, big.mark = ",")
       ) |>
       arrange(desc(Count))
   
-    datatable(data |> dplyr::select(Count, `Binomial_Link`, `Common Names`),  
-          escape = FALSE,
-          colnames = c("Count", "Binomial Name", "Common Names"),
-          options = list(
-            pageLength = 100,
-            lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
-                              c("10", "25", "50", "100", "250", "500", "750")),
-            autoWidth = TRUE,
-            searchHighlight = TRUE
-          ))
+    datatable(data |> dplyr::select(`Binomial_Link`, `Common Names`, Count),  
+              escape = FALSE,
+              colnames = c("Binomial Name", "Common Names", "Count"),
+              options = list(
+                pageLength = 100,
+                lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
+                                  c("10", "25", "50", "100", "250", "500", "750")),
+                autoWidth = TRUE,
+                searchHighlight = TRUE,
+                scrollY = "515px"
+              ))
   })
-  
-  # Handle species selection from table clicks
-  observeEvent(input$tree_table_rows_selected, {
-    selected_row <- input$tree_table_rows_selected
-    displayed_data <- filtered_data() |>
-      group_by(Binomial_Name) |>
-      summarise(
-        `Common Names` = paste(unique(COMMON_NAME), collapse = ", "),  
-        Count = sum(n())
-      ) |>
-      arrange(desc(Count))  # Sort for display
-  
-    if (!is.null(selected_row) && length(selected_row) > 0 && selected_row <= nrow(displayed_data)) {
-      species <- displayed_data$Binomial_Name[selected_row]  
-      selected_species(species)
-      selected_tree(NULL)  
-    }
-  })
-  
-  output$all_trees_table <- renderDT({
+
+   output$all_trees_table <- renderDT({
     data <- filtered_data() |>
       dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, geo_point_2d) |>
       mutate(
@@ -453,8 +428,27 @@ server <- function(input, output, session) {
                 lengthMenu = list(c(10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000), 
                                   c("10", "50", "100", "250", "500", "1K", "2.5K", "5K", "10K", "25K")),
                 autoWidth = TRUE,
-                searchHighlight = TRUE
+                searchHighlight = TRUE,
+                scrollY = "500px"
               ))
+  })
+
+  # Handle species selection from table clicks
+  observeEvent(input$tree_table_rows_selected, {
+    selected_row <- input$tree_table_rows_selected
+    displayed_data <- filtered_data() |>
+      group_by(Binomial_Name) |>
+      summarise(
+        `Common Names` = paste(unique(COMMON_NAME), collapse = ", "),  
+        Count = sum(n())
+      ) |>
+      arrange(desc(Count))  # Sort for display
+  
+    if (!is.null(selected_row) && length(selected_row) > 0 && selected_row <= nrow(displayed_data)) {
+      species <- displayed_data$Binomial_Name[selected_row]  
+      selected_species(species)
+      selected_tree(NULL)  
+    }
   })
   
   # Handle tree selection from table clicks
