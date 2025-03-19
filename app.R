@@ -21,7 +21,6 @@ library(leaflet.extras)  # For heatmap layers in Leaflet
 #     rsconnect::deployApp(appDir = ".", appName = "vancouver-trees-dashboard")
 # Deploy location:
 #     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
-###
 
 street_trees <- read_csv2("data/raw/street-trees.csv")
 
@@ -115,7 +114,7 @@ ui <- fluidPage(
                h3("Tree Counts by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
                fluidRow(
                  column(12, div(style = "display: flex; align-items: center;",
-                                actionButton("reset_species", "Reset Selection", class = "btn btn-info btn-sm"),
+                                actionButton("reset_species", "Clear Selection", class = "btn btn-info btn-sm"),
                                 span(style = "padding-left: 15px; font-size: 14px;", textOutput("species_count_text"))
                  ))
                ),
@@ -129,7 +128,7 @@ ui <- fluidPage(
                h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
                fluidRow(
                  column(12, div(style = "display: flex; align-items: center;",
-                                actionButton("reset_tree", "Reset Selection", class = "btn btn-info btn-sm"),
+                                actionButton("reset_tree", "Clear Selection", class = "btn btn-info btn-sm"),
                                 span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
                  ))
                ),
@@ -139,16 +138,44 @@ ui <- fluidPage(
     )
   ),
 
-  # Map Row (Hidden Outputs, Only Input Dependent)
+  # Map Row
   fluidRow(
     column(12, 
           div(class = "panel panel-default", 
               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-              h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),  
+              h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
+              fluidRow(
+                column(12, 
+                        div(style = "display: flex; align-items: center;",
+                            actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
+                            span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
+                        )
+                )
+              ),
+              br(),
               leafletOutput("tree_map", height = "600px")
           )
     )
-  )
+  ),
+
+  # Fix popup / zoom conflict
+  tags$script(HTML('
+    Shiny.addCustomMessageHandler("openPopupAfterZoom", function(message) {
+      var map = window.treeMap;
+      if (!map) return;
+      map.once("zoomend", function() {
+        var markerFound = null;
+        map.eachLayer(function(layer) {
+          if (layer.options && layer.options.layerId == message.id) {
+            markerFound = layer;
+          }
+        });
+        if (markerFound) {
+          markerFound.bindPopup(message.content).openPopup();
+        }
+      });
+    });
+  '))
 )
 
 server <- function(input, output, session) {
@@ -209,37 +236,13 @@ server <- function(input, output, session) {
   output$tree_map <- renderLeaflet({
     leaflet() |>
       addTiles() |>
-      setView(lng = -123.1216, lat = 49.2827, zoom = 12)  # Default to Vancouver
+      setView(lng = -123.1216, lat = 49.2827, zoom = 12) |>
+      htmlwidgets::onRender("function(el, x) { window.treeMap = this; }")
   })
 
   # Dynamic filter updates
   observe({
     data <- filtered_data()
-
-    observeEvent(input$tree_map_marker_click, {
-        click <- input$tree_map_marker_click
-        if (is.null(click)) return()  # No click detected
-
-        # Find the tree closest to the clicked location
-        clicked_tree <- filtered_data() |>
-          mutate(
-            lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
-            lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
-          ) |>
-          arrange(abs(lng - click$lng) + abs(lat - click$lat)) |>
-          slice(1)  # Closest tree
-
-        if (nrow(clicked_tree) == 1) {
-          updatePickerInput(session, "neighbourhood", selected = clicked_tree$NEIGHBOURHOOD_NAME)
-          updatePickerInput(session, "height_range", selected = clicked_tree$HEIGHT_RANGE)
-          updatePickerInput(session, "binomial_name", selected = clicked_tree$Binomial_Name)
-          updatePickerInput(session, "common_name", selected = clicked_tree$COMMON_NAME)
-
-          # Update table selections
-          selected_species(clicked_tree$Binomial_Name)
-          selected_tree(clicked_tree$TREE_ID)
-        }
-    })
 
     if (nrow(data) > 0) {
       # Extract coordinates
@@ -473,28 +476,77 @@ server <- function(input, output, session) {
   output$tree_count_text <- renderText({
     num_trees <- filtered_data() |>
       nrow()
-  
     paste("Total Trees:", format(num_trees, big.mark = ","))
   })
 
-  observe({
-    data <- filtered_data()
-    print(paste("Filtered Data Rows:", nrow(data)))  # Debugging output
+  # Is this redundant with the above?
+  output$map_tree_count_text <- renderText({
+    num_trees <- filtered_data() |>
+      nrow()
+    paste("Total Trees:", format(num_trees, big.mark = ","))
+  })
 
-    data <- data |> mutate(
-      lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
-      lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
-    )
+observe({
+  data <- filtered_data()
+  print(paste("Filtered Data Rows:", nrow(data)))  # Debug output
 
-    leafletProxy("tree_map", data = data) |>
+  data <- data |> mutate(
+    lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+    lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+  )
+  
+  if(nrow(data) > 0) {
+    # Calculate bounds from the filtered data
+    minLng <- min(data$lng, na.rm = TRUE)
+    maxLng <- max(data$lng, na.rm = TRUE)
+    minLat <- min(data$lat, na.rm = TRUE)
+    maxLat <- max(data$lat, na.rm = TRUE)
+    
+    if(nrow(data) == 1) {
+      leafletProxy("tree_map", data = data) |>
+        clearMarkers() |>
+        clearMarkerClusters() |>
+        addMarkers(
+          lng = ~lng,
+          lat = ~lat,
+          layerId = ~TREE_ID,
+          clusterOptions = markerClusterOptions()
+        ) |>
+        setView(lng = data$lng, lat = data$lat, zoom = 17)
+    } else {
+      leafletProxy("tree_map", data = data) |>
+        clearMarkers() |>
+        clearMarkerClusters() |>
+        addMarkers(
+          lng = ~lng,
+          lat = ~lat,
+          layerId = ~TREE_ID,
+          clusterOptions = markerClusterOptions()
+        ) |>
+        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+    }
+  } else {
+    # If no data is available, reset to a default view
+    leafletProxy("tree_map") |>
       clearMarkers() |>
       clearMarkerClusters() |>
-      addMarkers(
-        lng = ~lng,
-        lat = ~lat,
-        clusterOptions = markerClusterOptions()
-      )
+      setView(lng = -123.1216, lat = 49.2827, zoom = 12)
+  }
+})
+  
+  observeEvent(input$tree_map_marker_click, {
+    event <- input$tree_map_marker_click
+    if (!is.null(event$id)) {
+      selected_tree(event$id)
+      selected_species(NULL)  # Clear species selection if a tree is chosen
+      session$sendCustomMessage("openPopupAfterZoom", 
+                                list(id = event$id, content = as.character(event$id)))
+    }
   })
+
+observeEvent(input$reset_map, {
+  selected_tree(NULL)
+})
 
 }
 
