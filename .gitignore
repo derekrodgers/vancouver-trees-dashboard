@@ -1,3 +1,6 @@
+# Don't commit maps API key
+google_api_key.txt
+
 # History files
 .Rhistory
 .Rapp.history
