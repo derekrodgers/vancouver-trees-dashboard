@@ -603,11 +603,12 @@ available_neighbourhoods <- reactive({
         Count = sum(n())
       ) |>
       arrange(desc(Count))  # Sort for display
-  
+    
     if (!is.null(selected_row) && length(selected_row) > 0 && selected_row <= nrow(displayed_data)) {
       species <- displayed_data$Binomial_Name[selected_row]  
       selected_species(species)
-      selected_tree(NULL)  
+      selected_tree(NULL)
+      updatePickerInput(session, "binomial_name", selected = species)
     }
   })
   
@@ -672,7 +673,7 @@ observe({
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions()
         ) |>
-        setView(lng = data$lng, lat = data$lat, zoom = 15)
+        setView(lng = data$lng, lat = data$lat, zoom = 16)
     } else {
       leafletProxy("tree_map", data = data) |>
         clearMarkers() |>
