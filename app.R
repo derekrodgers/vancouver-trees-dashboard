@@ -80,7 +80,7 @@ ui <- fluidPage(
                 column(10, 
                       fluidRow(
                         column(3, pickerInput("neighbourhood", "Neighbourhood",
-                                              choices = unique(street_trees$NEIGHBOURHOOD_NAME),
+                                              choices = sort(unique(street_trees$NEIGHBOURHOOD_NAME)),
                                               multiple = TRUE,
                                               options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                               width = "100%")),
@@ -90,12 +90,12 @@ ui <- fluidPage(
                                               options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                               width = "100%")),
                         column(3, pickerInput("binomial_name", "Binomial Name",
-                                              choices = unique(street_trees$Binomial_Name),
+                                              choices = sort(unique(street_trees$Binomial_Name)),
                                               multiple = TRUE,
                                               options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                               width = "100%")),
                         column(3, pickerInput("common_name", "Common Name",
-                                              choices = unique(street_trees$COMMON_NAME),
+                                              choices = sort(unique(street_trees$COMMON_NAME)),
                                               multiple = TRUE,
                                               options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                               width = "100%"))
@@ -225,6 +225,104 @@ server <- function(input, output, session) {
   selected_species <- reactiveVal(NULL)
   selected_tree <- reactiveVal(NULL)
   restoring_view <- reactiveVal(FALSE)
+
+available_neighbourhoods <- reactive({
+  data <- street_trees
+  
+  # Apply other filters (if any) that affect what neighbourhoods are available
+  if (!is.null(input$height_range) && length(input$height_range) > 0) {
+      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+    }
+    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+      data <- data |> filter(Binomial_Name %in% input$binomial_name)
+    }
+    if (!is.null(input$common_name) && length(input$common_name) > 0) {
+      data <- data |> filter(COMMON_NAME %in% input$common_name)
+    }
+    
+    sort(unique(data$NEIGHBOURHOOD_NAME))
+  })
+
+  observe({
+    updatePickerInput(session, "neighbourhood",
+                      choices = available_neighbourhoods(),
+                      selected = intersect(input$neighbourhood, available_neighbourhoods()))
+  })
+
+  # Compute available Height Range values based on other filters
+  available_height_range <- reactive({
+    data <- street_trees
+    
+    # Apply the other filters
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
+      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
+    }
+    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+      data <- data |> filter(Binomial_Name %in% input$binomial_name)
+    }
+    if (!is.null(input$common_name) && length(input$common_name) > 0) {
+      data <- data |> filter(COMMON_NAME %in% input$common_name)
+    }
+
+    # Preserve the original factor order from street_trees$HEIGHT_RANGE
+    hr_levels <- levels(street_trees$HEIGHT_RANGE)
+    # Only keep levels actually present in the filtered data
+    hr_levels[hr_levels %in% data$HEIGHT_RANGE]
+  })
+
+  # Update the Height Range picker
+  observe({
+    updatePickerInput(
+      session,
+      "height_range",
+      choices = available_height_range(),
+      selected = intersect(input$height_range, available_height_range())
+    )
+  })
+
+  # Compute available Binomial Name values based on other filters
+  available_binomial_name <- reactive({
+    data <- street_trees
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
+      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
+    }
+    if (!is.null(input$height_range) && length(input$height_range) > 0) {
+      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+    }
+    if (!is.null(input$common_name) && length(input$common_name) > 0) {
+      data <- data |> filter(COMMON_NAME %in% input$common_name)
+    }
+    sort(unique(data$Binomial_Name))
+  })
+
+  # Update the Binomial Name picker
+  observe({
+    updatePickerInput(session, "binomial_name",
+                      choices = available_binomial_name(),
+                      selected = intersect(input$binomial_name, available_binomial_name()))
+  })
+
+  # Compute available Common Name values based on other filters
+  available_common_name <- reactive({
+    data <- street_trees
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
+      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
+    }
+    if (!is.null(input$height_range) && length(input$height_range) > 0) {
+      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+    }
+    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+      data <- data |> filter(Binomial_Name %in% input$binomial_name)
+    }
+    sort(unique(data$COMMON_NAME))
+  })
+
+  # Update the Common Name picker
+  observe({
+    updatePickerInput(session, "common_name",
+                      choices = available_common_name(),
+                      selected = intersect(input$common_name, available_common_name()))
+  })
 
   observeEvent(input$reset_filters, {
     updatePickerInput(session, "neighbourhood", selected = character(0))
@@ -403,7 +501,8 @@ server <- function(input, output, session) {
       geom_tile() +
       scale_fill_gradient(low = "white", high = "blue") +
       labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
-      theme_minimal()
+      theme_minimal() +
+      scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
   
     ggplotly(plot, tooltip = "text")  # tooltips
   })
@@ -440,8 +539,8 @@ server <- function(input, output, session) {
           gsub(" ", "_", Binomial_Name),
           "' target='_blank'>", Binomial_Name, "</a>"
         ),
-        `Common Names` = ifelse(nchar(`Common Names`) > 75, 
-                                paste0(substr(`Common Names`, 1, 75), "..."), 
+        `Common Names` = ifelse(nchar(`Common Names`) > 85, 
+                                paste0(substr(`Common Names`, 1, 85), "..."), 
                                 `Common Names`),
         Count = format(Count, big.mark = ",")
       ) |>
@@ -456,7 +555,7 @@ server <- function(input, output, session) {
                                   c("10", "25", "50", "100", "250", "500", "750")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
-                scrollY = "515px"
+                scrollY = "415px"
               ))
   })
 
@@ -490,7 +589,7 @@ server <- function(input, output, session) {
                                   c("10", "50", "100", "250", "500", "1K", "2.5K", "5K", "10K", "25K")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
-                scrollY = "500px"
+                scrollY = "400px"
               ))
   })
 
@@ -651,5 +750,12 @@ observe({
 
 }
 
-options(shiny.autoreload = TRUE)
-shinyApp(ui, server, options = list(port = 3838))
+# Only enable autoreload if on Derek's computer
+if (grepl("^/Users/derek", getwd())) {
+  options(shiny.autoreload = TRUE)
+  app_options <- list(port = 3838)
+} else {
+  app_options <- list()
+}
+
+shinyApp(ui, server, options = app_options)
