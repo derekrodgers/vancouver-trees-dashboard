@@ -539,8 +539,8 @@ available_neighbourhoods <- reactive({
           gsub(" ", "_", Binomial_Name),
           "' target='_blank'>", Binomial_Name, "</a>"
         ),
-        `Common Names` = ifelse(nchar(`Common Names`) > 85, 
-                                paste0(substr(`Common Names`, 1, 85), "..."), 
+        `Common Names` = ifelse(nchar(`Common Names`) > 80, 
+                                paste0(substr(`Common Names`, 1, 80), "..."), 
                                 `Common Names`),
         Count = format(Count, big.mark = ",")
       ) |>
