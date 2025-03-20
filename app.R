@@ -547,10 +547,7 @@ available_neighbourhoods <- reactive({
       flush.console()  # Forces print output
 
       interpolated <- predict(kriging_model, grid)
-
-      print("Prediction complete!")  # Debugging statement
-      flush.console()
-
+      
       # Convert to raster for heatmap rendering
       if (is.na(crs(rast))) {
         crs(rast) <- CRS("+proj=longlat +datum=WGS84")  # Set projection explicitly
@@ -573,7 +570,7 @@ available_neighbourhoods <- reactive({
       leafletProxy("tree_map") |>
         clearHeatmap() |>  
         addRasterImage(rast, colors = pal, opacity = 0.7) |>
-        addLegend(pal = pal, values = interpolated$var1.pred, title = "Tree Density")
+        addLegend(values = interpolated$var1.pred, title = "Tree Density")
     }
   })
 
@@ -762,7 +759,24 @@ observe({
           lng = ~lng,
           lat = ~lat,
           layerId = ~TREE_ID,
-          clusterOptions = markerClusterOptions()
+          clusterOptions = markerClusterOptions(
+            iconCreateFunction = JS("function(cluster) {
+              var maxCount = 45000;
+              var numBuckets = 10;
+              var colors = [
+                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+              ];
+              var count = cluster.getChildCount();
+              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+              return new L.DivIcon({
+                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
+                className: 'marker-cluster',
+                iconSize: new L.Point(50, 50)
+              });
+            }")
+          )
         ) |>
         setView(lng = data$lng, lat = data$lat, zoom = 16)
     } else {
@@ -773,7 +787,24 @@ observe({
           lng = ~lng,
           lat = ~lat,
           layerId = ~TREE_ID,
-          clusterOptions = markerClusterOptions()
+          clusterOptions = markerClusterOptions(
+            iconCreateFunction = JS("function(cluster) {
+              var maxCount = 45000;
+              var numBuckets = 10;
+              var colors = [
+                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+              ];
+              var count = cluster.getChildCount();
+              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+              return new L.DivIcon({
+                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
+                className: 'marker-cluster',
+                iconSize: new L.Point(50, 50)
+              });
+            }")
+          )
         ) |>
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
     }
