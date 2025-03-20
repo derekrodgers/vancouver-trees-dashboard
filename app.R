@@ -180,6 +180,17 @@ ui <- fluidPage(
     )
   ),
 
+  # Street view
+  fluidRow(
+    column(12,
+      div(class = "panel panel-default",
+          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; margin-top: 10px;",
+          h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
+          uiOutput("street_view_iframe")
+      )
+    )
+  ),
+
   # Fix popup / zoom conflict
   tags$script(HTML('
     // Custom handler to open popup after zoom
@@ -400,6 +411,51 @@ available_neighbourhoods <- reactive({
       setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
       htmlwidgets::onRender("function(el, x) { window.treeMap = this; }")
   })
+
+  # Street view
+# Read the Google API key from the file and trim any extra whitespace
+google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
+google_api_key <- "[REMOVED]"
+output$street_view_iframe <- renderUI({
+  req(selected_tree())
+  
+  # Retrieve the selected tree's information
+  tree_info <- street_trees %>% 
+    filter(TREE_ID == selected_tree()) %>% 
+    slice(1)
+  
+  if(nrow(tree_info) == 0) {
+    return(tags$div("Select a single tree to see street view.", 
+                    style = "font-size:16px; padding:10px;"))
+  }
+  
+  # Extract coordinates from the geo_point_2d field (assumes "lat, lon" format)
+  coords <- strsplit(tree_info$geo_point_2d, ",\\s*")[[1]]
+  if(length(coords) < 2) {
+    return(tags$div("No valid coordinates available.", 
+                    style = "font-size:16px; padding:10px;"))
+  }
+  
+  lat <- as.numeric(coords[1])
+  lon <- as.numeric(coords[2])
+  
+  # Construct the embed URL in the specified format:
+  # https://www.google.com/maps/embed/v1/streetview?location=49.2704%2C-123.1031&key=YOUR_API_KEY
+  embed_url <- paste0(
+    "https://www.google.com/maps/embed/v1/streetview?",
+    "location=", lat, "%2C", lon,
+    "&key=", google_api_key
+  )
+  
+  tags$iframe(
+    src = embed_url,
+    width = "600",
+    height = "450",
+    style = "border:0",
+    loading = "lazy",
+    allowfullscreen = NA
+  )
+})
 
   # Dynamic filter updates
   observe({
