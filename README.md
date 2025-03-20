@@ -1,6 +1,6 @@
 # Vancouver Street Trees Dashboard
 
-The **Vancouver Street Trees Dashboard** is an interactive Shiny app that enables users to:
+The **Vancouver Street Trees Dashboard** is an interactive R Shiny app that enables users to:
 
 - Filter street trees by **neighbourhood, height category, binomial species name, and common name**.
 - Visualize tree distributions with a **heatmap** and **bar chart**.
