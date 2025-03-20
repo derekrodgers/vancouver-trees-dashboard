@@ -765,12 +765,20 @@ observe({
               var maxCount = 45000;
               var numBuckets = 10;
               var colors = [
-                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+                '#90EE90', // light green
+                '#008000', // green
+                '#006400', // dark green
+                '#ADFF2F', // green yellow
+                '#FFFF00', // yellow
+                '#FFD700', // gold
+                '#FFA500', // orange
+                '#FF8C00', // dark orange
+                '#FF4500', // orange red
+                '#FF0000'  // red
               ];
               var count = cluster.getChildCount();
               var countFormatted = (count < 1000) ? count : (count / 1000).toFixed(1).replace(/\\.0$/, '') + 'k';
-              var bucket = Math.floor(count / maxCount * numBuckets);
+              var bucket = Math.floor((count / maxCount) * numBuckets);
               bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
               return new L.DivIcon({
                 html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + countFormatted + '</span></div>',
@@ -780,7 +788,7 @@ observe({
             }")
           )
         ) |>
-        setView(lng = data$lng, lat = data$lat, zoom = 16)
+        setView(lng = data$lng, lat = data$lat, zoom = 15)
     } else {
       leafletProxy("tree_map", data = data) |>
         clearMarkers() |>
@@ -794,12 +802,20 @@ observe({
               var maxCount = 45000;
               var numBuckets = 10;
               var colors = [
-                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+                '#90EE90', // light green
+                '#008000', // green
+                '#006400', // dark green
+                '#ADFF2F', // green yellow
+                '#FFFF00', // yellow
+                '#FFD700', // gold
+                '#FFA500', // orange
+                '#FF8C00', // dark orange
+                '#FF4500', // orange red
+                '#FF0000'  // red
               ];
               var count = cluster.getChildCount();
               var countFormatted = (count < 1000) ? count : (count / 1000).toFixed(1).replace(/\\.0$/, '') + 'k';
-              var bucket = Math.floor(count / maxCount * numBuckets);
+              var bucket = Math.floor((count / maxCount) * numBuckets);
               bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
               return new L.DivIcon({
                 html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + countFormatted + '</span></div>',
@@ -815,7 +831,7 @@ observe({
     leafletProxy("tree_map") |>
       clearMarkers() |>
       clearMarkerClusters() |>
-      setView(lng = -123.1216, lat = 49.2827, zoom = 15) # was 12
+      setView(lng = -123.1216, lat = 49.2827, zoom = 12)
   }
 })
   
