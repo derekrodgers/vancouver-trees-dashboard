@@ -391,6 +391,14 @@ available_neighbourhoods <- reactive({
                       selected = intersect(input$common_name, available_common_name()))
   })
 
+  # change behaviour of map popup's "x"
+  observeEvent(input$popup_closed, {
+    selected_tree(NULL)
+    later::later(function() {
+      session$sendCustomMessage("restorePrevMapView", list())
+    }, delay = 0.2)
+  })
+
   observeEvent(input$reset_filters, {
     updatePickerInput(session, "neighbourhood", selected = character(0))
     updatePickerInput(session, "height_range", selected = character(0))
@@ -420,9 +428,11 @@ available_neighbourhoods <- reactive({
     }
   })
 
-  # Reset species selection
   observeEvent(input$reset_species, {
     selected_species(NULL)
+    updatePickerInput(session, "binomial_name", selected = character(0))
+    proxy <- dataTableProxy('tree_table')
+    selectRows(proxy, integer(0))
   })
 
   # Reset tree selection
@@ -790,7 +800,7 @@ observe({
             iconCreateFunction = JS(icon_create_string)
           )
         ) |>
-        setView(lng = data$lng, lat = data$lat, zoom = 16)
+        setView(lng = data$lng, lat = data$lat, zoom = 15)
     } else {
       leafletProxy("tree_map", data = data) |>
         clearMarkers() |>
