@@ -24,6 +24,7 @@ library(leaflet.extras)  # For heatmap layers in Leaflet
 #     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
 
 street_trees <- read_csv2("data/raw/street-trees.csv")
+google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
 # Preprocessing
 capitalize_hyphenated <- function(x) {
@@ -160,35 +161,94 @@ ui <- fluidPage(
   ),
 
   # Map Row
-  fluidRow(
-    column(12, 
-          div(class = "panel panel-default", 
-              style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-              h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
-              fluidRow(
-                column(12, 
-                  div(style = "display: flex; align-items: center;",
-                    actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
-                    actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
-                    span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
-                  )
-                )
-              ),
-              br(),
-              leafletOutput("tree_map", height = "600px")
+# Map Row
+fluidRow(
+  # Map Column
+  column(7, 
+    div(class = "panel panel-default", 
+        style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+        h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
+        fluidRow(
+          column(12, 
+            div(style = "display: flex; align-items: center;",
+                actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
+                actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
+                span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
+            )
           )
+        ),
+        # Instead of forcing the panel to 500px, we let the panel expand.
+        # We only fix the map output to 500px:
+        div(style = "margin-bottom: 8px;"),  # Added padding between buttons and map
+        leafletOutput("tree_map", height = "500px")
     )
   ),
-
-  # Street view
-  fluidRow(
-    column(12,
-      div(class = "panel panel-default",
-          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; margin-top: 10px;",
-          h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
-          uiOutput("street_view_iframe")
-      )
+  
+  # Street View Column
+  column(5,
+    div(class = "panel panel-default",
+        style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+        h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
+        # Again, fix the Street View container to 500px
+        tags$div(id = "street_view_container", style = "width: 100%; height: 539px;")
     )
+  )
+),
+
+
+  # JS for street view
+  tags$head(
+    tags$script(src = paste0("https://maps.googleapis.com/maps/api/js?key=", google_api_key, "&libraries=geometry")),
+    tags$script(HTML('
+      Shiny.addCustomMessageHandler("updateStreetView", function(message) {
+        var location = new google.maps.LatLng(message.lat, message.lon);
+        var sv = new google.maps.StreetViewService();
+        sv.getPanorama({location: location, radius: 50}, function(data, status) {
+          if (status === google.maps.StreetViewStatus.OK) {
+            var panoLatLng = data.location.latLng;
+            var computedHeading = google.maps.geometry.spherical.computeHeading(panoLatLng, location);
+            if (!window.streetPanorama) {
+              window.streetPanorama = new google.maps.StreetViewPanorama(
+                document.getElementById("street_view_container"),
+                {
+                  position: location,
+                  pov: {heading: computedHeading, pitch: 0},
+                  visible: true
+                }
+              );
+            } else {
+              window.streetPanorama.setPosition(location);
+              window.streetPanorama.setPov({heading: computedHeading, pitch: 0});
+              window.streetPanorama.setVisible(true);
+            }
+          } else {
+            console.log("No panorama found for this location.");
+          }
+        });
+      });
+
+      Shiny.addCustomMessageHandler("clearStreetView", function(message) {
+        // If a Street View panorama exists, hide it and remove references.
+        if (window.streetPanorama) {
+          window.streetPanorama.setVisible(false);
+          window.streetPanorama = null;
+        }
+        
+        // Get the container for Street View.
+        var container = document.getElementById("street_view_container");
+        
+        // Remove all existing child elements.
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+        
+        // Reset the container\'s background to white.
+        container.style.backgroundColor = "white";
+        
+        // Insert the placeholder message.
+        container.innerHTML = "<div style=\'font-size:16px; padding:10px;\'>Select a single tree.</div>";
+      });
+    '))
   ),
 
   # Fix popup / zoom conflict
@@ -413,48 +473,29 @@ available_neighbourhoods <- reactive({
   })
 
   # Street view
-# Read the Google API key from the file and trim any extra whitespace
-google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
-output$street_view_iframe <- renderUI({
-  req(selected_tree())
-  
-  # Retrieve the selected tree's information
-  tree_info <- street_trees %>% 
-    filter(TREE_ID == selected_tree()) %>% 
-    slice(1)
-  
-  if(nrow(tree_info) == 0) {
-    return(tags$div("Select a single tree to see street view.", 
-                    style = "font-size:16px; padding:10px;"))
-  }
-  
-  # Extract coordinates from the geo_point_2d field (assumes "lat, lon" format)
-  coords <- strsplit(tree_info$geo_point_2d, ",\\s*")[[1]]
-  if(length(coords) < 2) {
-    return(tags$div("No valid coordinates available.", 
-                    style = "font-size:16px; padding:10px;"))
-  }
-  
-  lat <- as.numeric(coords[1])
-  lon <- as.numeric(coords[2])
-  
-  # Construct the embed URL in the specified format:
-  # https://www.google.com/maps/embed/v1/streetview?location=49.2704%2C-123.1031&key=YOUR_API_KEY
-  embed_url <- paste0(
-    "https://www.google.com/maps/embed/v1/streetview?",
-    "location=", lat, "%2C", lon,
-    "&key=", google_api_key
-  )
-  
-  tags$iframe(
-    src = embed_url,
-    width = "600",
-    height = "450",
-    style = "border:0",
-    loading = "lazy",
-    allowfullscreen = NA
-  )
-})
+  observe({
+    req(selected_tree())  # Only proceed when a tree is selected
+    
+    # Retrieve the selected tree's info
+    tree_info <- street_trees %>% 
+      filter(TREE_ID == selected_tree()) %>% 
+      slice(1)
+    
+    # Extract coordinates from the 'geo_point_2d' field (assumed format "lat, lon")
+    coords <- strsplit(tree_info$geo_point_2d, ",\\s*")[[1]]
+    if (length(coords) < 2) return()
+    lat <- as.numeric(coords[1])
+    lon <- as.numeric(coords[2])
+    
+    # Send a custom message to update Street View
+    session$sendCustomMessage("updateStreetView", list(lat = lat, lon = lon))
+  })
+
+  observe({
+    if (is.null(selected_tree())) {
+      session$sendCustomMessage("clearStreetView", list())
+    }
+  })
 
   # Dynamic filter updates
   observe({
