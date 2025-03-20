@@ -751,7 +751,33 @@ observe({
     maxLng <- max(data$lng, na.rm = TRUE)
     minLat <- min(data$lat, na.rm = TRUE)
     maxLat <- max(data$lat, na.rm = TRUE)
-    
+
+    icon_create_string <- "function(cluster) {
+      var maxCount = 45000;
+      var numBuckets = 9;
+      var colors = [
+        '#90EE90', // light green
+        '#008000', // green
+        '#ADFF2F', // green yellow
+        '#FFFF00', // yellow
+        '#FFD700', // gold
+        '#FFA500', // orange
+        '#FF8C00', // dark orange
+        '#FF4500', // orange red
+        '#FF0000'  // red
+      ];
+      var count = cluster.getChildCount();
+      // If count is less than 1000, leave it as is; otherwise, round to the nearest thousand.
+      var countFormatted = (count < 1000) ? count : (Math.round(count / 1000)) + 'k';
+      var bucket = Math.floor(Math.pow(count / maxCount, 0.5) * numBuckets);
+      bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+      return new L.DivIcon({
+        html: '<div style=\"background-color:' + colors[bucket] + ';\"><span style=\"color: black; font-size: 14px;\">' + countFormatted + '</span></div>',
+        className: 'marker-cluster',
+        iconSize: new L.Point(50, 50)
+      });
+    }"
+
     if(nrow(data) == 1) {
       leafletProxy("tree_map", data = data) |>
         clearMarkers() |>
@@ -761,34 +787,10 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
-            iconCreateFunction = JS("function(cluster) {
-              var maxCount = 45000;
-              var numBuckets = 10;
-              var colors = [
-                '#90EE90', // light green
-                '#008000', // green
-                '#006400', // dark green
-                '#ADFF2F', // green yellow
-                '#FFFF00', // yellow
-                '#FFD700', // gold
-                '#FFA500', // orange
-                '#FF8C00', // dark orange
-                '#FF4500', // orange red
-                '#FF0000'  // red
-              ];
-              var count = cluster.getChildCount();
-              var countFormatted = (count < 1000) ? count : (count / 1000).toFixed(1).replace(/\\.0$/, '') + 'k';
-              var bucket = Math.floor((count / maxCount) * numBuckets);
-              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-              return new L.DivIcon({
-                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + countFormatted + '</span></div>',
-                className: 'marker-cluster',
-                iconSize: new L.Point(50, 50)
-              });
-            }")
+            iconCreateFunction = JS(icon_create_string)
           )
         ) |>
-        setView(lng = data$lng, lat = data$lat, zoom = 15)
+        setView(lng = data$lng, lat = data$lat, zoom = 16)
     } else {
       leafletProxy("tree_map", data = data) |>
         clearMarkers() |>
@@ -798,31 +800,7 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
-            iconCreateFunction = JS("function(cluster) {
-              var maxCount = 45000;
-              var numBuckets = 10;
-              var colors = [
-                '#90EE90', // light green
-                '#008000', // green
-                '#006400', // dark green
-                '#ADFF2F', // green yellow
-                '#FFFF00', // yellow
-                '#FFD700', // gold
-                '#FFA500', // orange
-                '#FF8C00', // dark orange
-                '#FF4500', // orange red
-                '#FF0000'  // red
-              ];
-              var count = cluster.getChildCount();
-              var countFormatted = (count < 1000) ? count : (count / 1000).toFixed(1).replace(/\\.0$/, '') + 'k';
-              var bucket = Math.floor((count / maxCount) * numBuckets);
-              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-              return new L.DivIcon({
-                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + countFormatted + '</span></div>',
-                className: 'marker-cluster',
-                iconSize: new L.Point(50, 50)
-              });
-            }")
+            iconCreateFunction = JS(icon_create_string)
           )
         ) |>
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
