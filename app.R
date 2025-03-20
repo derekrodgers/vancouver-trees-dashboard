@@ -761,21 +761,22 @@ observe({
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
             iconCreateFunction = JS("function(cluster) {
-              var maxCount = 45000;
-              var numBuckets = 10;
-              var colors = [
-                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
-              ];
-              var count = cluster.getChildCount();
-              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
-              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-              return new L.DivIcon({
-                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
-                className: 'marker-cluster',
-                iconSize: new L.Point(50, 50)
-              });
-            }")
+  var maxCount = 45000;
+  var numBuckets = 10;
+  var colors = [
+    '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+    '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+  ];
+  var count = cluster.getChildCount();
+  var countFormatted = (count < 1000) ? count : (count / 1000).toFixed(1).replace(/\\.0$/, '') + 'k';
+  var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+  bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+  return new L.DivIcon({
+    html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + countFormatted + '</span></div>',
+    className: 'marker-cluster',
+    iconSize: new L.Point(50, 50)
+  });
+}")
           )
         ) |>
         setView(lng = data$lng, lat = data$lat, zoom = 16)
@@ -789,21 +790,22 @@ observe({
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
             iconCreateFunction = JS("function(cluster) {
-              var maxCount = 45000;
-              var numBuckets = 10;
-              var colors = [
-                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
-              ];
-              var count = cluster.getChildCount();
-              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
-              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-              return new L.DivIcon({
-                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
-                className: 'marker-cluster',
-                iconSize: new L.Point(50, 50)
-              });
-            }")
+  var maxCount = 45000;
+  var numBuckets = 10;
+  var colors = [
+    '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+    '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+  ];
+  var count = cluster.getChildCount();
+  var countFormatted = (count < 1000) ? count : (count / 1000).toFixed(1).replace(/\\.0$/, '') + 'k';
+  var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+  bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+  return new L.DivIcon({
+    html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + countFormatted + '</span></div>',
+    className: 'marker-cluster',
+    iconSize: new L.Point(50, 50)
+  });
+}")
           )
         ) |>
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
