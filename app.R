@@ -41,6 +41,7 @@ street_trees <- street_trees |>
     # Convert to title case
     COMMON_NAME = str_to_title(COMMON_NAME),
     NEIGHBOURHOOD_NAME = str_to_title(NEIGHBOURHOOD_NAME),
+    CIVIC_ADDRESS = paste0(CIVIC_NUMBER, " ", str_to_title(STD_STREET)),
     
     HEIGHT_RANGE = factor(
       str_replace_all(HEIGHT_RANGE, " ", ""),  # Remove spaces
@@ -814,7 +815,7 @@ observe({
     leafletProxy("tree_map") |>
       clearMarkers() |>
       clearMarkerClusters() |>
-      setView(lng = -123.1216, lat = 49.2827, zoom = 12)
+      setView(lng = -123.1216, lat = 49.2827, zoom = 15) # was 12
   }
 })
   
@@ -834,6 +835,7 @@ observe({
             "' target='_blank'>wiki</a>)<br>",
           "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
           "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
+          "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
           "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
           "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", 
             tree_info$geo_point_2d, "' target='_blank'>View</a>"
