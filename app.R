@@ -27,15 +27,9 @@ street_trees <- read_csv2("data/raw/street-trees.csv")
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
 # Preprocessing
-capitalize_hyphenated <- function(x) {
-  x <- tolower(x)
-  # This regex uppercases the first letter of the string and every letter following a hyphen.
-  gsub("(^|-)([a-z])", "\\1\\U\\2", x, perl = TRUE)
-}
-
 street_trees <- street_trees |>
   mutate(
-    # Construct Binomial_Name: capitalize genus and make species lowercase, then remove trailing " x"
+    # Construct Binomial_Name: capitalize genus and make species lowercase, then remove any trailing " x"
     Binomial_Name = paste0(
       toupper(substr(GENUS_NAME, 1, 1)),
       tolower(substr(GENUS_NAME, 2, nchar(GENUS_NAME))),
@@ -44,10 +38,8 @@ street_trees <- street_trees |>
     ),
     Binomial_Name = gsub(" x$", "", Binomial_Name),
     
-    # Convert common names to title case
+    # Convert to title case
     COMMON_NAME = str_to_title(COMMON_NAME),
-    
-    # Convert neighbourhood names to title case
     NEIGHBOURHOOD_NAME = str_to_title(NEIGHBOURHOOD_NAME),
     
     HEIGHT_RANGE = factor(
@@ -62,8 +54,10 @@ street_trees <- street_trees |>
   )
 
 ui <- fluidPage(
+  # Browser title
   title = "Vancouver Street Trees Dashboard",
-  # Filters row
+  
+  # Title and filters card
   fluidRow(
     column(12, 
           div(class = "panel panel-default", 
@@ -161,40 +155,41 @@ ui <- fluidPage(
   ),
 
   # Map Row
-# Map Row
-fluidRow(
-  # Map Column
-  column(7, 
-    div(class = "panel panel-default", 
-        style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-        h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
-        fluidRow(
-          column(12, 
-            div(style = "display: flex; align-items: center;",
-                actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
-                actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
-                span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
+  fluidRow(
+    # Map Column
+    column(7, 
+      div(class = "panel panel-default", 
+          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
+          fluidRow(
+            column(12, 
+              div(style = "display: flex; align-items: center;",
+                  actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
+                  actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
+                  span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
+              )
             )
-          )
-        ),
-        # Instead of forcing the panel to 500px, we let the panel expand.
-        # We only fix the map output to 500px:
-        div(style = "margin-bottom: 8px;"),  # Added padding between buttons and map
-        leafletOutput("tree_map", height = "500px")
+          ),
+          # Instead of forcing the panel to 500px, we let the panel expand.
+          # We only fix the map output to 500px:
+          div(style = "margin-bottom: 8px;"),  # Added padding between buttons and map
+          leafletOutput("tree_map", height = "500px")
+      )
+    ),
+    
+    # Street View Column
+    column(5,
+      div(class = "panel panel-default",
+          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
+          # Again, fix the Street View container to 500px
+          tags$div(id = "street_view_container", style = "width: 100%; height: 539px;")
+      )
     )
   ),
-  
-  # Street View Column
-  column(5,
-    div(class = "panel panel-default",
-        style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-        h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
-        # Again, fix the Street View container to 500px
-        tags$div(id = "street_view_container", style = "width: 100%; height: 539px;")
-    )
-  )
-),
 
+  # Favicon
+  tags$head(tags$link(rel = "shortcut icon", type = "image/png", href = "favicon.png")),
 
   # JS for street view
   tags$head(
