@@ -245,22 +245,7 @@ ui <- fluidPage(
       });
     '))
   ),
-  tags$head(
-    tags$style(HTML('
-      .leaflet-marker-icon.marker-cluster {
-        width: 100px !important;
-        height: 100px !important;
-        border-radius: 50px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
-      .leaflet-marker-icon.marker-cluster span {
-        font-size: 14px !important;
-      }
-    '))
-  ),
-  
+
   # Fix popup / zoom conflict
   tags$script(HTML('
     // Custom handler to open popup after zoom
@@ -553,42 +538,36 @@ available_neighbourhoods <- reactive({
 
       # Kriging Interpolation for Tree Density
       print("Starting kriging...")  # Debugging statement
- 
+
       kriging_model <- gstat::gstat(
         formula = tree_density ~ 1, locations = density_counts, nmax = 10, set = list(idp = 2)
       )
- 
+
       print("Kriging model created. Running prediction...")  # Debugging statement
       flush.console()  # Forces print output
- 
+
       interpolated <- predict(kriging_model, grid)
- 
-      print("Prediction complete!")  # Debugging statement
-      flush.console()
- 
-      # Create a raster from the interpolated results
-      # Ensure that the 'interpolated' object has columns named 'lng', 'lat', and 'var1.pred'
-      rast <- raster::rasterFromXYZ(as.data.frame(interpolated)[, c("lng", "lat", "var1.pred")])
       
-      # Ensure the raster has the correct CRS
+      # Convert to raster for heatmap rendering
       if (is.na(crs(rast))) {
         crs(rast) <- CRS("+proj=longlat +datum=WGS84")  # Set projection explicitly
       } else if (crs(rast)@projargs != "+proj=longlat +datum=WGS84") {
         rast <- projectRaster(rast, crs = CRS("+proj=longlat +datum=WGS84"))  # Reproject if incorrect CRS
       }
-      
-      # Instead of applying the log transform only in the palette function, compute a transformed raster
-      # This creates a new raster where each value is log10(original_value + 1)
-      rast_transformed <- raster::calc(rast, function(x) log10(x + 1))
- 
-      # Create a color palette based on the range of the transformed raster values
-      pal <- colorNumeric("YlOrRd", domain = range(rast_transformed[], na.rm = TRUE), na.color = "transparent")
- 
-      # Update the Leaflet map using the transformed raster
+
+      max_val <- max(interpolated$var1.pred, na.rm = TRUE)
+      min_val <- min(interpolated$var1.pred, na.rm = TRUE)
+
+      if (max_val == min_val) {  
+        interpolated$var1.pred <- 0  # Set to zero if no variation  
+      } else {
+        interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
+      }
+
+      pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")  # Normalize domain
+
+      # Update Leaflet map with Heatmap
       leafletProxy("tree_map") |>
-        clearHeatmap() |>
-        addRasterImage(rast_transformed, colors = pal, opacity = 0.7) |>
-        addLegend(pal = pal, values = rast_transformed[], title = "Log10(Tree Density + 1)")
         clearHeatmap() |>  
         addRasterImage(rast, colors = pal, opacity = 0.7) |>
         addLegend(values = interpolated$var1.pred, title = "Tree Density")
@@ -781,32 +760,22 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
-            iconCreateFunction = JS("
-              function(cluster) {
-                var maxCount = 45000;
-                var numBuckets = 10;
-                var colors = [
-                  '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                  '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
-                ];
-                var count = cluster.getChildCount();
-                var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
-                bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-
-                var size = Math.min(80 + count * 0.2, 150); // Dynamic scaling
-
-                return new L.DivIcon({
-                  html: '<div style=\"background-color:' + colors[bucket] + ';
-                          width: ' + size + 'px; height: ' + size + 'px;
-                          border-radius: 50%; text-align: center;
-                          line-height: ' + size + 'px; font-size: 14px;
-                          font-weight: bold; color: black;\">' 
-                          + count.toLocaleString() + '</div>',
-                  className: 'marker-cluster',
-                  iconSize: new L.Point(size, size)  // Adjusts clickable area
-                });
-              }"
-            )
+            iconCreateFunction = JS("function(cluster) {
+              var maxCount = 45000;
+              var numBuckets = 10;
+              var colors = [
+                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+              ];
+              var count = cluster.getChildCount();
+              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+              return new L.DivIcon({
+                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
+                className: 'marker-cluster',
+                iconSize: new L.Point(50, 50)
+              });
+            }")
           )
         ) |>
         setView(lng = data$lng, lat = data$lat, zoom = 16)
@@ -819,32 +788,22 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
-            iconCreateFunction = JS("
-              function(cluster) {
-                var maxCount = 45000;
-                var numBuckets = 10;
-                var colors = [
-                  '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                  '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
-                ];
-                var count = cluster.getChildCount();
-                var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
-                bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-
-                var size = Math.min(80 + count * 0.2, 150); // Dynamic scaling
-
-                return new L.DivIcon({
-                  html: '<div style=\"background-color:' + colors[bucket] + ';
-                          width: ' + size + 'px; height: ' + size + 'px;
-                          border-radius: 50%; text-align: center;
-                          line-height: ' + size + 'px; font-size: 14px;
-                          font-weight: bold; color: black;\">' 
-                          + count.toLocaleString() + '</div>',
-                  className: 'marker-cluster',
-                  iconSize: new L.Point(size, size)  // Adjusts clickable area
-                });
-              }"
-            )
+            iconCreateFunction = JS("function(cluster) {
+              var maxCount = 45000;
+              var numBuckets = 10;
+              var colors = [
+                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+              ];
+              var count = cluster.getChildCount();
+              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+              return new L.DivIcon({
+                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
+                className: 'marker-cluster',
+                iconSize: new L.Point(50, 50)
+              });
+            }")
           )
         ) |>
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
