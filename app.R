@@ -415,7 +415,6 @@ available_neighbourhoods <- reactive({
   # Street view
 # Read the Google API key from the file and trim any extra whitespace
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
-google_api_key <- "[REMOVED]"
 output$street_view_iframe <- renderUI({
   req(selected_tree())
   
