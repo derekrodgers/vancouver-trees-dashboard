@@ -109,14 +109,14 @@ ui <- fluidPage(
   fluidRow(
     column(5, 
            div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
                plotlyOutput("height_distribution", height = "450px")
            )
     ),
     column(7, 
            div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
                plotlyOutput("heatmap", height = "450px")
            )
@@ -127,7 +127,7 @@ ui <- fluidPage(
   fluidRow(
     column(5,  
            div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("Tree Counts by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
                fluidRow(
                  column(12, div(style = "display: flex; align-items: center;",
@@ -141,7 +141,7 @@ ui <- fluidPage(
     ),
     column(7,  
            div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
                fluidRow(
                  column(12, div(style = "display: flex; align-items: center;",
@@ -158,9 +158,9 @@ ui <- fluidPage(
   # Map Row
   fluidRow(
     # Map Column
-    column(7, 
+    column(8, 
       div(class = "panel panel-default", 
-          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
           h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
           fluidRow(
             column(12, 
@@ -174,17 +174,17 @@ ui <- fluidPage(
           # Instead of forcing the panel to 500px, we let the panel expand.
           # We only fix the map output to 500px:
           div(style = "margin-bottom: 8px;"),  # Added padding between buttons and map
-          leafletOutput("tree_map", height = "500px")
+          leafletOutput("tree_map", height = "580px")
       )
     ),
     
     # Street View Column
-    column(5,
+    column(4,
       div(class = "panel panel-default",
-          style = "background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
           h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
           # Again, fix the Street View container to 500px
-          tags$div(id = "street_view_container", style = "width: 100%; height: 539px;")
+          tags$div(id = "street_view_container", style = "width: 100%; height: 619px;")
       )
     )
   ),
@@ -654,7 +654,7 @@ available_neighbourhoods <- reactive({
                                   c("10", "25", "50", "100", "250", "500", "750")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
-                scrollY = "415px"
+                scrollY = "355px"
               ))
   })
 
@@ -688,7 +688,7 @@ available_neighbourhoods <- reactive({
                                   c("10", "50", "100", "250", "500", "1K", "2.5K", "5K", "10K", "25K")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
-                scrollY = "400px"
+                scrollY = "340px"
               ))
   })
 
@@ -718,6 +718,25 @@ available_neighbourhoods <- reactive({
       tree_id <- filtered_data() |> distinct(TREE_ID) |> slice(selected_row) |> pull(TREE_ID)
       selected_tree(tree_id)
       selected_species(NULL)  # Clear species selection if a tree is chosen
+      
+      # Look up the tree information from the filtered data
+      tree_info <- filtered_data() |> dplyr::filter(TREE_ID == tree_id) |> dplyr::slice(1)
+      
+      if(nrow(tree_info) > 0) {
+        content <- paste0(
+          "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
+          "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
+          "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
+          "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
+          "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
+          "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
+          "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>"
+        )
+      } else {
+        content <- "No tree info found."
+      }
+      
+      session$sendCustomMessage("openPopupAfterZoom", list(id = tree_id, content = content))
     }
   })
   
@@ -764,11 +783,10 @@ observe({
 
     icon_create_string <- "function(cluster) {
       var maxCount = 45000;
-      var numBuckets = 9;
+      var numBuckets = 8;
       var colors = [
         '#90EE90', // light green
         '#008000', // green
-        '#ADFF2F', // green yellow
         '#FFFF00', // yellow
         '#FFD700', // gold
         '#FFA500', // orange
@@ -797,6 +815,7 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
+            disableClusteringAtZoom = 18,
             iconCreateFunction = JS(icon_create_string)
           )
         ) |>
@@ -810,6 +829,7 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
+            disableClusteringAtZoom = 18,
             iconCreateFunction = JS(icon_create_string)
           )
         ) |>
