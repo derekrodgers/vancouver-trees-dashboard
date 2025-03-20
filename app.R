@@ -245,7 +245,22 @@ ui <- fluidPage(
       });
     '))
   ),
-
+  tags$head(
+    tags$style(HTML('
+      .leaflet-marker-icon.marker-cluster {
+        width: 100px !important;
+        height: 100px !important;
+        border-radius: 50px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      .leaflet-marker-icon.marker-cluster span {
+        font-size: 14px !important;
+      }
+    '))
+  ),
+  
   # Fix popup / zoom conflict
   tags$script(HTML('
     // Custom handler to open popup after zoom
@@ -760,22 +775,32 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
-            iconCreateFunction = JS("function(cluster) {
-              var maxCount = 45000;
-              var numBuckets = 10;
-              var colors = [
-                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
-              ];
-              var count = cluster.getChildCount();
-              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
-              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-              return new L.DivIcon({
-                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
-                className: 'marker-cluster',
-                iconSize: new L.Point(50, 50)
-              });
-            }")
+            iconCreateFunction = JS("
+              function(cluster) {
+                var maxCount = 45000;
+                var numBuckets = 10;
+                var colors = [
+                  '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+                  '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+                ];
+                var count = cluster.getChildCount();
+                var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+                bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+
+                var size = Math.min(80 + count * 0.2, 150); // Dynamic scaling
+
+                return new L.DivIcon({
+                  html: '<div style=\"background-color:' + colors[bucket] + ';
+                          width: ' + size + 'px; height: ' + size + 'px;
+                          border-radius: 50%; text-align: center;
+                          line-height: ' + size + 'px; font-size: 14px;
+                          font-weight: bold; color: black;\">' 
+                          + count.toLocaleString() + '</div>',
+                  className: 'marker-cluster',
+                  iconSize: new L.Point(size, size)  // Adjusts clickable area
+                });
+              }"
+            )
           )
         ) |>
         setView(lng = data$lng, lat = data$lat, zoom = 16)
@@ -788,22 +813,32 @@ observe({
           lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
-            iconCreateFunction = JS("function(cluster) {
-              var maxCount = 45000;
-              var numBuckets = 10;
-              var colors = [
-                '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
-                '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
-              ];
-              var count = cluster.getChildCount();
-              var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
-              bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-              return new L.DivIcon({
-                html: '<div style=\"background-color:' + colors[bucket] + ';\"><span>' + count.toLocaleString() + '</span></div>',
-                className: 'marker-cluster',
-                iconSize: new L.Point(50, 50)
-              });
-            }")
+            iconCreateFunction = JS("
+              function(cluster) {
+                var maxCount = 45000;
+                var numBuckets = 10;
+                var colors = [
+                  '#e6f4e6', '#cce8cc', '#b3ddb3', '#99d199', '#80c680',
+                  '#66ba66', '#4db14d', '#33a933', '#1a9f1a', '#008800'
+                ];
+                var count = cluster.getChildCount();
+                var bucket = Math.floor(Math.log(count) / Math.log(maxCount) * numBuckets);
+                bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+
+                var size = Math.min(80 + count * 0.2, 150); // Dynamic scaling
+
+                return new L.DivIcon({
+                  html: '<div style=\"background-color:' + colors[bucket] + ';
+                          width: ' + size + 'px; height: ' + size + 'px;
+                          border-radius: 50%; text-align: center;
+                          line-height: ' + size + 'px; font-size: 14px;
+                          font-weight: bold; color: black;\">' 
+                          + count.toLocaleString() + '</div>',
+                  className: 'marker-cluster',
+                  iconSize: new L.Point(size, size)  // Adjusts clickable area
+                });
+              }"
+            )
           )
         ) |>
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
