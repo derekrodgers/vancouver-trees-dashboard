@@ -538,42 +538,42 @@ available_neighbourhoods <- reactive({
 
       # Kriging Interpolation for Tree Density
       print("Starting kriging...")  # Debugging statement
-
+ 
       kriging_model <- gstat::gstat(
         formula = tree_density ~ 1, locations = density_counts, nmax = 10, set = list(idp = 2)
       )
-
+ 
       print("Kriging model created. Running prediction...")  # Debugging statement
       flush.console()  # Forces print output
-
+ 
       interpolated <- predict(kriging_model, grid)
-
+ 
       print("Prediction complete!")  # Debugging statement
       flush.console()
-
-      # Convert to raster for heatmap rendering
+ 
+      # Create a raster from the interpolated results
+      # Ensure that the 'interpolated' object has columns named 'lng', 'lat', and 'var1.pred'
+      rast <- raster::rasterFromXYZ(as.data.frame(interpolated)[, c("lng", "lat", "var1.pred")])
+      
+      # Ensure the raster has the correct CRS
       if (is.na(crs(rast))) {
         crs(rast) <- CRS("+proj=longlat +datum=WGS84")  # Set projection explicitly
       } else if (crs(rast)@projargs != "+proj=longlat +datum=WGS84") {
         rast <- projectRaster(rast, crs = CRS("+proj=longlat +datum=WGS84"))  # Reproject if incorrect CRS
       }
-
-      max_val <- max(interpolated$var1.pred, na.rm = TRUE)
-      min_val <- min(interpolated$var1.pred, na.rm = TRUE)
-
-      if (max_val == min_val) {  
-        interpolated$var1.pred <- 0  # Set to zero if no variation  
-      } else {
-        interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
-      }
-
-      pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")  # Normalize domain
-
-      # Update Leaflet map with Heatmap
+      
+      # Instead of applying the log transform only in the palette function, compute a transformed raster
+      # This creates a new raster where each value is log10(original_value + 1)
+      rast_transformed <- raster::calc(rast, function(x) log10(x + 1))
+ 
+      # Create a color palette based on the range of the transformed raster values
+      pal <- colorNumeric("YlOrRd", domain = range(rast_transformed[], na.rm = TRUE), na.color = "transparent")
+ 
+      # Update the Leaflet map using the transformed raster
       leafletProxy("tree_map") |>
-        clearHeatmap() |>  
-        addRasterImage(rast, colors = pal, opacity = 0.7) |>
-        addLegend(pal = pal, values = interpolated$var1.pred, title = "Tree Density")
+        clearHeatmap() |>
+        addRasterImage(rast_transformed, colors = pal, opacity = 0.7) |>
+        addLegend(pal = pal, values = rast_transformed[], title = "Log10(Tree Density + 1)")
     }
   })
 
