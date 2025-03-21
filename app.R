@@ -123,7 +123,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
-                    column(2, pickerInput("interesting_trees", "🌸 Interesting Trees 🌸",
+                    column(2, pickerInput("interesting_trees", "🌴 Interesting Trees 🌴",
                                           choices = c("🌸 Cherry & Plum Trees 🌸"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
