@@ -71,7 +71,7 @@ ui <- fluidPage(
   fluidRow(
     column(12, 
           div(class = "panel panel-default", 
-              style = "background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 10px;",
+              style = "background-color: #f8f9fa; padding: 10px 20px; border-radius: 8px; margin-top: 5px;",
               
               # Title Row
               fluidRow(
@@ -81,7 +81,7 @@ ui <- fluidPage(
 
               # Filters & Reset Button Row
               fluidRow(
-                style = "margin-bottom: 0px;",  # Remove extra margin below row
+                style = "margin-bottom: -5px;",
                 column(10, 
                       fluidRow(
                         column(3, pickerInput("neighbourhood", "Neighbourhood",
@@ -120,64 +120,47 @@ ui <- fluidPage(
     column(8, 
       div(class = "panel panel-default", 
           style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-          h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
           fluidRow(
-            column(12, 
-              div(style = "display: flex; align-items: center;",
-                  actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
-                  actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
-                  span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
+            column(12,
+              div(
+                style = "display: flex; flex-wrap: wrap; align-items: center;",
+                
+                div(
+                  style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
+                  h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;")
+                ),
+                
+                div(
+                  style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
+                  textOutput("map_tree_count_text")
+                ),
+                
+                div(
+                  style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
+                  actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-xs"),
+                  actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-xs", style = "margin-left: 10px;")
+                )
               )
             )
           ),
-          # Instead of forcing the panel to 500px, we let the panel expand.
-          # We only fix the map output to 500px:
-          div(style = "margin-bottom: 8px;"),  # Added padding between buttons and map
-          leafletOutput("tree_map", height = "520px")
+          div(leafletOutput("tree_map", height = "520px")
+          )
       )
     ),
     # Street View Column
     column(4,
       div(class = "panel panel-default",
           style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-          h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
+          h3("Street View", style = "margin-top: 1px; margin-bottom: 15px;"),
           # Again, fix the Street View container to 500px
-          tags$div(id = "street_view_container", style = "width: 100%; height: 559px;")
+          tags$div(id = "street_view_container", style = "width: 100%; height: 521px;")
       )
     )
   ),
 
   # Tables row
   fluidRow(
-    column(5,  
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               fluidRow(
-                 column(12,
-                   div(
-                     style = "display: flex; flex-wrap: wrap; align-items: center;",
- 
-                     div(
-                       style = "flex: 0 0 auto; margin-right: 15px;",
-                       h3("Tree Counts by Species", style = "margin-top: 5px; margin-bottom: 10px;")
-                     ),
- 
-                     div(
-                       style = "flex: 1 1 auto; text-align: center; font-size: 14px;",
-                       textOutput("species_count_text")
-                     ),
- 
-                     div(
-                       style = "flex: 0 0 auto; text-align: right;",
-                       actionButton("reset_species", "Clear Selection", class = "btn btn-info btn-xs")
-                     )
-                   )
-                 )
-               ),
-               DTOutput("tree_table")
-           )
-    ),
-    column(7,  
+    column(8,  
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                fluidRow(
@@ -204,6 +187,34 @@ ui <- fluidPage(
                ),
                DTOutput("all_trees_table")
            )
+    ),
+    column(4,  
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               fluidRow(
+                 column(12,
+                   div(
+                     style = "display: flex; flex-wrap: wrap; align-items: center;",
+ 
+                     div(
+                       style = "flex: 0 0 auto; margin-right: 15px;",
+                       h3("Tree Species", style = "margin-top: 5px; margin-bottom: 10px;")
+                     ),
+ 
+                     div(
+                       style = "flex: 1 1 auto; text-align: center; font-size: 14px;",
+                       textOutput("species_count_text")
+                     ),
+ 
+                     div(
+                       style = "flex: 0 0 auto; text-align: right;",
+                       actionButton("reset_species", "Clear Selection", class = "btn btn-info btn-xs")
+                     )
+                   )
+                 )
+               ),
+               DTOutput("tree_table")
+           )
     )
   ),
 
@@ -212,15 +223,15 @@ ui <- fluidPage(
     column(5, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("height_distribution", height = "450px")
+               h3("Tree Heights, All Neighbourhoods", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("height_distribution", height = "420px")
            )
     ),
     column(7, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
                h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "450px")
+               plotlyOutput("heatmap", height = "420px")
            )
     )
   ),
@@ -657,44 +668,7 @@ available_neighbourhoods <- reactive({
     ggplotly(plot, tooltip = "text")  # tooltips
   })
 
-  # Tree species count table
-  output$tree_table <- renderDT({
-    data <- filtered_data() |>
-      group_by(Binomial_Name, COMMON_NAME) |>
-      summarise(Count_Common_Name = n(), .groups = "drop") |>
-      arrange(Binomial_Name, desc(Count_Common_Name)) |>
-      group_by(Binomial_Name) |>
-      summarise(
-        `Common Names` = paste(unique(COMMON_NAME[order(-Count_Common_Name)]), collapse = ", "),
-        Count = sum(Count_Common_Name)
-      ) |>
-            mutate(
-        `Binomial_Link` = paste0(
-          "<a href='https://en.wikipedia.org/wiki/",
-          gsub(" ", "_", Binomial_Name),
-          "' target='_blank'>", Binomial_Name, "</a>"
-        ),
-        `Common Names` = ifelse(nchar(`Common Names`) > 80, 
-                                paste0(substr(`Common Names`, 1, 80), "..."), 
-                                `Common Names`),
-        Count = format(Count, big.mark = ",")
-      ) |>
-      arrange(desc(Count))
-  
-    datatable(data |> dplyr::select(Count, `Binomial_Link`, `Common Names`),  
-              escape = FALSE,
-              colnames = c("Count", "Binomial Name", "Common Names"),
-              options = list(
-                pageLength = 100,
-                lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
-                                  c("10", "25", "50", "100", "250", "500", "750")),
-                autoWidth = TRUE,
-                searchHighlight = TRUE,
-                scrollY = "345px"
-              ))
-  })
-
-   output$all_trees_table <- renderDT({
+  output$all_trees_table <- renderDT({
     data <- filtered_data() |>
       dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, geo_point_2d) |>
       mutate(
@@ -724,7 +698,44 @@ available_neighbourhoods <- reactive({
                                   c("10", "50", "100", "250", "500", "1K", "2.5K", "5K", "10K", "25K")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
-                scrollY = "330px"
+                scrollY = "370px"
+              ))
+  })
+
+  # Tree species count table
+  output$tree_table <- renderDT({
+    data <- filtered_data() |>
+      group_by(Binomial_Name, COMMON_NAME) |>
+      summarise(Count_Common_Name = n(), .groups = "drop") |>
+      arrange(Binomial_Name, desc(Count_Common_Name)) |>
+      group_by(Binomial_Name) |>
+      summarise(
+        `Common Names` = paste(unique(COMMON_NAME[order(-Count_Common_Name)]), collapse = ", "),
+        Count = sum(Count_Common_Name)
+      ) |>
+            mutate(
+        `Binomial_Link` = paste0(
+          "<a href='https://en.wikipedia.org/wiki/",
+          gsub(" ", "_", Binomial_Name),
+          "' target='_blank'>", Binomial_Name, "</a>"
+        ),
+        `Common Names` = ifelse(nchar(`Common Names`) > 60, 
+                                paste0(substr(`Common Names`, 1, 60), "..."), 
+                                `Common Names`),
+        Count = format(Count, big.mark = ",")
+      ) |>
+      arrange(desc(Count))
+  
+    datatable(data |> dplyr::select(Count, `Binomial_Link`, `Common Names`),  
+              escape = FALSE,
+              colnames = c("Count", "Binomial Name", "Common Names"),
+              options = list(
+                pageLength = 100,
+                lengthMenu = list(c(10, 25, 50, 100, 250, 500, 750), 
+                                  c("10", "25", "50", "100", "250", "500", "750")),
+                autoWidth = TRUE,
+                searchHighlight = TRUE,
+                scrollY = "340px"
               ))
   })
 
