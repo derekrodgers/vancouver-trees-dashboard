@@ -124,7 +124,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
                     column(2, pickerInput("interesting_trees", "👉🏽 Interesting Trees 👈🏽",
-                                          choices = c("Heritage", "Unusual", "Rare", "Largest", "Oldest"),
+                                          choices = c("🌸 Cherry & Plum Trees 🌸"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
@@ -400,6 +400,9 @@ available_neighbourhoods <- reactive({
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
     }
+    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
+      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+    }
     
     sort(unique(data$NEIGHBOURHOOD_NAME))
   })
@@ -475,6 +478,9 @@ available_neighbourhoods <- reactive({
     if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
       data <- data |> filter(Binomial_Name %in% input$binomial_name)
     }
+    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
+      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+    }
     sort(unique(data$COMMON_NAME))
   })
 
@@ -483,6 +489,13 @@ available_neighbourhoods <- reactive({
     updatePickerInput(session, "common_name",
                       choices = available_common_name(),
                       selected = intersect(input$common_name, available_common_name()))
+  })
+  
+  observeEvent(input$interesting_trees, {
+    if ("🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
+      cherry_plum_names <- sort(unique(street_trees$COMMON_NAME[grepl("cherry|plum", street_trees$COMMON_NAME, ignore.case = TRUE)]))
+      updatePickerInput(session, "common_name", selected = cherry_plum_names)
+    }
   })
 
   # change behaviour of map popup's "x"
