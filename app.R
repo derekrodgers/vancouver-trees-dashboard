@@ -103,34 +103,35 @@ ui <- fluidPage(
               ),
               # Filters & Reset Button Row
               fluidRow(
-                style = "margin-bottom: -5px;",
-                column(10, 
-                      fluidRow(
-                        column(3, pickerInput("neighbourhood", "Neighbourhood",
-                                              choices = sort(unique(street_trees$NEIGHBOURHOOD_NAME)),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%")),
-                        column(3, pickerInput("height_range", "Height Range",
-                                              choices = levels(street_trees$HEIGHT_RANGE),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%")),
-                        column(3, pickerInput("binomial_name", "Binomial Name",
-                                              choices = sort(unique(street_trees$Binomial_Name)),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%")),
-                        column(3, pickerInput("common_name", "Common Name",
-                                              choices = sort(unique(street_trees$COMMON_NAME)),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%"))
-                      )
-                ),
-                column(2, div(style = "text-align: right; margin-top: 25px;",  
-                            actionButton("reset_filters", "Reset Filters", class = "btn-danger"))
-                )
+                    column(2, pickerInput("neighbourhood", "Neighbourhood",
+                                          choices = sort(unique(street_trees$NEIGHBOURHOOD_NAME)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("binomial_name", "Binomial Name",
+                                          choices = sort(unique(street_trees$Binomial_Name)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("common_name", "Common Name",
+                                          choices = sort(unique(street_trees$COMMON_NAME)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("height_range", "Height Range",
+                                          choices = levels(street_trees$HEIGHT_RANGE),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("interesting_trees", "🌴 Interesting Trees 🌴",
+                                          choices = c("🌸 Cherry & Plum Trees 🌸"),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, div(style = "text-align: right; margin-top: 25px;",
+                                  actionButton("reset_filters", "Reset Filters", 
+                                              class = "btn-danger",
+                                              style = "font-weight: bold; font-size: 14.5px; padding: 8px 14px;")))
               )
           )
     )
@@ -401,6 +402,9 @@ available_neighbourhoods <- reactive({
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
     }
+    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
+      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+    }
     
     sort(unique(data$NEIGHBOURHOOD_NAME))
   })
@@ -476,6 +480,9 @@ available_neighbourhoods <- reactive({
     if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
       data <- data |> filter(Binomial_Name %in% input$binomial_name)
     }
+    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
+      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+    }
     sort(unique(data$COMMON_NAME))
   })
 
@@ -484,6 +491,13 @@ available_neighbourhoods <- reactive({
     updatePickerInput(session, "common_name",
                       choices = available_common_name(),
                       selected = intersect(input$common_name, available_common_name()))
+  })
+  
+  observeEvent(input$interesting_trees, {
+    if ("🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
+      cherry_plum_names <- sort(unique(street_trees$COMMON_NAME[grepl("cherry|plum", street_trees$COMMON_NAME, ignore.case = TRUE)]))
+      updatePickerInput(session, "common_name", selected = cherry_plum_names)
+    }
   })
 
   # change behaviour of map popup's "x"
@@ -499,6 +513,7 @@ available_neighbourhoods <- reactive({
     updatePickerInput(session, "height_range", selected = character(0))
     updatePickerInput(session, "binomial_name", selected = character(0))
     updatePickerInput(session, "common_name", selected = character(0))
+    updatePickerInput(session, "interesting_trees", selected = character(0))
     
     selected_species(NULL)
     selected_tree(NULL)
