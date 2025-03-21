@@ -820,13 +820,15 @@ available_neighbourhoods <- reactive({
       
       if(nrow(tree_info) > 0) {
         content <- paste0(
+          "<div style='font-size: 16px;'>",
           "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
           "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
           "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
           "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
           "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
           "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
-          "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>"
+          "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
+          "</div>"
         )
       } else {
         content <- "No tree info found."
@@ -950,6 +952,7 @@ observe({
       
       if(nrow(tree_info) > 0) {
         content <- paste0(
+          "<div style='font-size: 16px;'>",
           "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
             "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), 
             "' target='_blank'>wiki</a>)<br>",
@@ -958,7 +961,8 @@ observe({
           "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
           "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
           "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", 
-            tree_info$geo_point_2d, "' target='_blank'>View</a>"
+            tree_info$geo_point_2d, "' target='_blank'>View</a>",
+          "</div>"
         )
       } else {
         content <- "No tree info found."
