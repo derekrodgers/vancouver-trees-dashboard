@@ -67,7 +67,15 @@ ui <- fluidPage(
       }
     "))
   ),
-  
+
+  tags$head(
+    tags$style(HTML("
+      .bootstrap-select .dropdown-menu {
+        z-index: 2000 !important;
+      }
+    "))
+  ),
+
   # Title and filters card
   fluidRow(
     column(12, 
@@ -257,7 +265,7 @@ ui <- fluidPage(
         style = "padding: 3px; text-align: left",
           tags$p(
             "Dataset: ",
-            tags$a(href = "https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name", "City of Vancouver Open Data - Public Trees")
+            tags$a(href = "https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name", target = "_blank", "City of Vancouver Open Data Portal - Public Trees")
           ),
           # tags$p(
           #   tags$a(href = "https://github.com/derekrodgers/vancouver-trees-dashboard", "GitHub Repository")
