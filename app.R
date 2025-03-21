@@ -192,7 +192,7 @@ ui <- fluidPage(
  
                      div(
                        style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
-                       h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;")
+                       h3("All Trees", style = "margin-top: 1px; margin-bottom: 10px;")
                      ),
  
                      div(
@@ -265,7 +265,7 @@ ui <- fluidPage(
         style = "padding: 3px; text-align: left",
           tags$p(
             "Dataset: ",
-            tags$a(href = "https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name", target = "_blank", "City of Vancouver Open Data Portal - Public Trees")
+            tags$a(href = "https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name", target = "_blank", "Vancouver Open Data Portal - Public Trees")
           ),
           # tags$p(
           #   tags$a(href = "https://github.com/derekrodgers/vancouver-trees-dashboard", "GitHub Repository")
