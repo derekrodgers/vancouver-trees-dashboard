@@ -336,7 +336,17 @@ ui <- fluidPage(
         }
       });
     });
-    
+  
+  Shiny.addCustomMessageHandler("saveCurrentMapView", function(message) {
+    var map = window.treeMap;
+    if (map) {
+      window.prevView = {
+        center: map.getCenter(),
+        zoom: map.getZoom()
+      };
+    }
+  });
+  
     // Custom handler to restore previous map view
     Shiny.addCustomMessageHandler("restorePrevMapView", function(message) {
       var map = window.treeMap;
@@ -928,6 +938,9 @@ observe({
       } else {
         content <- "No tree info found."
       }
+      
+      # Save the current map view before opening the popup
+      session$sendCustomMessage("saveCurrentMapView", list())
       
       session$sendCustomMessage("openPopupAfterZoom", list(id = event$id, content = content))
     }
