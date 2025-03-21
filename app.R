@@ -255,11 +255,13 @@ ui <- fluidPage(
     column(12,
       div(
         style = "padding: 3px; text-align: left",
-        tags$p(
-          tags$a(href = "https://opendata.vancouver.ca/explore/dataset/street-trees", "Dataset")
-          # tags$a(href = "https://opendata.vancouver.ca/explore/dataset/street-trees", "Dataset"), " | ",
-          # tags$a(href = "https://github.com/derekrodgers/vancouver-trees-dashboard", "GitHub Repository")
-        ),
+          tags$p(
+            "Dataset: ",
+            tags$a(href = "https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name", "City of Vancouver Open Data - Public Trees")
+          ),
+          # tags$p(
+          #   tags$a(href = "https://github.com/derekrodgers/vancouver-trees-dashboard", "GitHub Repository")
+          # ),
         tags$p(paste("©", format(Sys.Date(), "%Y"), "Derek Rodgers. Licensed under MIT."))
       )
     )

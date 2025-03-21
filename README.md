@@ -13,7 +13,7 @@ The **Vancouver Street Trees Dashboard** is an interactive R Shiny app that has:
 
 The data used in this dashboard comes from the **City of Vancouver's Public Trees Dataset**, available at:
 
-[City of Vancouver Open Data - Public Trees](https://opendata.vancouver.ca/explore/dataset/public-trees/)
+[City of Vancouver Open Data - Public Trees](https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name)
 
 ## Live App
 
