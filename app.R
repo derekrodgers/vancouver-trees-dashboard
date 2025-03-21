@@ -128,8 +128,10 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
-                    column(2, div(style = "text-align: right; margin-top: 25px;",  
-                                  actionButton("reset_filters", "Reset Filters", class = "btn-danger")))
+                    column(2, div(style = "text-align: right; margin-top: 25px;",
+                                  actionButton("reset_filters", "Reset Filters", 
+                                              class = "btn-danger",
+                                              style = "font-weight: bold; font-size: 14.5px; padding: 8px 14px;")))
               )
           )
     )
