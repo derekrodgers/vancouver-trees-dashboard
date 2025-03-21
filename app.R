@@ -882,7 +882,7 @@ observe({
       var numBuckets = 8;
       var colors = [
         '#90EE90', // light green
-        '#008000', // green
+        '#4cb04c', // green
         '#FFFF00', // yellow
         '#FFD700', // gold
         '#FFA500', // orange
