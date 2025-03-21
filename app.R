@@ -75,10 +75,23 @@ ui <- fluidPage(
               
               # Title Row
               fluidRow(
-                column(12, h2("Vancouver Street Trees Dashboard", 
-                              style = "margin-top: 0px; margin-bottom: 15px; text-align: left;"))
+                style = "margin-bottom: 15px;",
+                column(12,
+                  div(
+                    style = "display: flex; align-items: center;",
+ 
+                    h2(
+                      "Vancouver Street Trees Dashboard", 
+                      style = "margin: 0; text-align: left; line-height: 1.2; margin-right: 10px;"
+                    ),
+ 
+                    tags$img(
+                      src = "favicon.png", 
+                      height = "30px"
+                    )
+                  )
+                )
               ),
-
               # Filters & Reset Button Row
               fluidRow(
                 style = "margin-bottom: -5px;",
