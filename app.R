@@ -42,7 +42,6 @@ street_trees <- street_trees |>
     # Convert to title case
     COMMON_NAME = str_to_title(COMMON_NAME),
     NEIGHBOURHOOD_NAME = str_to_title(NEIGHBOURHOOD_NAME),
-    CIVIC_ADDRESS = paste0(CIVIC_NUMBER, " ", str_to_title(STD_STREET)),
     
     HEIGHT_RANGE = factor(
       str_replace_all(HEIGHT_RANGE, " ", ""),  # Remove spaces
@@ -845,7 +844,7 @@ available_neighbourhoods <- reactive({
       
       if(nrow(tree_info) > 0) {
         content <- paste0(
-          "<div style='font-size: 16px;'>",
+          "<div style='font-size: 14px;'>",
           "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
           "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
           "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
@@ -983,7 +982,6 @@ observe({
             "' target='_blank'>wiki</a>)<br>",
           "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
           "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
-          "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
           "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
           "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", 
             tree_info$geo_point_2d, "' target='_blank'>View</a>",
