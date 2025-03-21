@@ -69,11 +69,6 @@ ui <- fluidPage(
   ),
 
   tags$head(
-    tags$link(rel = "stylesheet", href = "https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css"),
-    tags$script(src = "https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js")
-  ),
-
-  tags$head(
     tags$style(HTML("
       .bootstrap-select .dropdown-menu {
         z-index: 2000 !important;
@@ -590,12 +585,7 @@ available_neighbourhoods <- reactive({
     leaflet() |>
       addTiles() |>
       setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
-      htmlwidgets::onRender("
-    function(el, x) {
-      window.treeMap = this;
-      this.addControl(new L.Control.Fullscreen());
-    }
-  ")
+      htmlwidgets::onRender("function(el, x) { window.treeMap = this; }")
   })
 
   # Street view
