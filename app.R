@@ -37,6 +37,7 @@ street_trees <- street_trees |>
       tolower(SPECIES_NAME)
     ),
     Binomial_Name = gsub(" x$", "", Binomial_Name),
+    Binomial_Name = gsub(" xx$", "", Binomial_Name),
     
     # Convert to title case
     COMMON_NAME = str_to_title(COMMON_NAME),
