@@ -105,25 +105,40 @@ ui <- fluidPage(
     )
   ),
 
-  # First chart row
+  # Map Row
   fluidRow(
-    column(5, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("height_distribution", height = "450px")
-           )
+    # Map Column
+    column(8, 
+      div(class = "panel panel-default", 
+          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
+          fluidRow(
+            column(12, 
+              div(style = "display: flex; align-items: center;",
+                  actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
+                  actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
+                  span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
+              )
+            )
+          ),
+          # Instead of forcing the panel to 500px, we let the panel expand.
+          # We only fix the map output to 500px:
+          div(style = "margin-bottom: 8px;"),  # Added padding between buttons and map
+          leafletOutput("tree_map", height = "520px")
+      )
     ),
-    column(7, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "450px")
-           )
+    # Street View Column
+    column(4,
+      div(class = "panel panel-default",
+          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
+          # Again, fix the Street View container to 500px
+          tags$div(id = "street_view_container", style = "width: 100%; height: 559px;")
+      )
     )
   ),
 
-  # Second chart row
+  # Tables row
   fluidRow(
     column(5,  
            div(class = "panel panel-default", 
@@ -155,37 +170,21 @@ ui <- fluidPage(
     )
   ),
 
-  # Map Row
+  # Heatmap / bar chart row
   fluidRow(
-    # Map Column
-    column(8, 
-      div(class = "panel panel-default", 
-          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-          h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;"),
-          fluidRow(
-            column(12, 
-              div(style = "display: flex; align-items: center;",
-                  actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-sm"),
-                  actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-sm", style = "margin-left: 10px;"),
-                  span(style = "padding-left: 15px; font-size: 14px;", textOutput("map_tree_count_text"))
-              )
-            )
-          ),
-          # Instead of forcing the panel to 500px, we let the panel expand.
-          # We only fix the map output to 500px:
-          div(style = "margin-bottom: 8px;"),  # Added padding between buttons and map
-          leafletOutput("tree_map", height = "580px")
-      )
+    column(5, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("height_distribution", height = "450px")
+           )
     ),
-    
-    # Street View Column
-    column(4,
-      div(class = "panel panel-default",
-          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-          h3("Street View", style = "margin-top: 1px; margin-bottom: 10px;"),
-          # Again, fix the Street View container to 500px
-          tags$div(id = "street_view_container", style = "width: 100%; height: 619px;")
-      )
+    column(7, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("heatmap", height = "450px")
+           )
     )
   ),
 
@@ -654,7 +653,7 @@ available_neighbourhoods <- reactive({
                                   c("10", "25", "50", "100", "250", "500", "750")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
-                scrollY = "355px"
+                scrollY = "345px"
               ))
   })
 
@@ -688,7 +687,7 @@ available_neighbourhoods <- reactive({
                                   c("10", "50", "100", "250", "500", "1K", "2.5K", "5K", "10K", "25K")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
-                scrollY = "340px"
+                scrollY = "330px"
               ))
   })
 
