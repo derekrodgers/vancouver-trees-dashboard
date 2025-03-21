@@ -76,6 +76,64 @@ ui <- fluidPage(
     "))
   ),
 
+  tags$head(
+    tags$style(HTML("
+      .bootstrap-select .dropdown-menu {
+        z-index: 2000 !important;
+      }
+      
+      body.dark-mode .bootstrap-select .dropdown-menu {
+        background-color: #333 !important;
+        color: #eee !important;
+      }
+      
+      body.dark-mode .bootstrap-select .dropdown-menu .dropdown-item {
+        background-color: #333 !important;
+        color: #eee !important;
+      }
+      
+      body.dark-mode .bootstrap-select .dropdown-toggle,
+      body.dark-mode .bootstrap-select .dropdown-toggle:focus,
+      body.dark-mode .bootstrap-select .dropdown-toggle:hover {
+        background-color: #444 !important;
+        color: #eee !important;
+        border-color: #555 !important;
+      }
+      
+      /* Dark mode styles */
+      body.dark-mode {
+        background-color: #222 !important;
+        color: #eee !important;
+      }
+
+      body.dark-mode .panel {
+        background-color: #333 !important;
+        border-color: #444 !important;
+      }
+
+      body.dark-mode .panel-default > .panel-heading,
+      body.dark-mode .panel-default > .panel-body {
+        color: #eee !important;
+      }
+
+      body.dark-mode .dataTables_wrapper,
+      body.dark-mode table.dataTable {
+        background-color: #333 !important;
+        color: #eee !important;
+      }
+    ")),
+    
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('toggleDarkMode', function(enabled) {
+        if (enabled) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      });
+    "))
+  ),
+
   # Title and filters card
   fluidRow(
     column(12, 
@@ -87,20 +145,37 @@ ui <- fluidPage(
                 style = "margin-bottom: 15px;",
                 column(12,
                   div(
-                    style = "display: flex; align-items: center;",
- 
-                    h2(
-                      "Vancouver Street Trees Dashboard", 
-                      style = "margin: 0; text-align: left; line-height: 1.2; margin-right: 10px;"
+                    style = "display: flex; align-items: center; justify-content: space-between;",
+                    
+                    # Left side: Title and logo
+                    div(
+                      style = "display: flex; align-items: center;",
+                      h2(
+                        "Vancouver Street Trees Dashboard", 
+                        style = "margin: 0; text-align: left; line-height: 1.2; margin-right: 10px;"
+                      ),
+                      tags$img(
+                        src = "favicon.png", 
+                        height = "30px"
+                      )
                     ),
- 
-                    tags$img(
-                      src = "favicon.png", 
-                      height = "30px"
+                    
+                    # Right side: Dark Mode toggle
+                    div(
+                      style = "text-align: right;",
+                        switchInput(
+                          inputId = "dark_mode",
+                          label = NULL,
+                          value = FALSE,
+                          size = "mini",
+                          onLabel = "🌙",
+                          offLabel = "☀️"
+                        )
                     )
                   )
                 )
               ),
+
               # Filters & Reset Button Row
               fluidRow(
                 style = "margin-bottom: -5px;",
@@ -388,21 +463,25 @@ server <- function(input, output, session) {
   selected_tree <- reactiveVal(NULL)
   restoring_view <- reactiveVal(FALSE)
 
-available_neighbourhoods <- reactive({
-  data <- street_trees
-  
-  # Apply other filters (if any) that affect what neighbourhoods are available
-  if (!is.null(input$height_range) && length(input$height_range) > 0) {
-      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
-    }
-    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
-      data <- data |> filter(Binomial_Name %in% input$binomial_name)
-    }
-    if (!is.null(input$common_name) && length(input$common_name) > 0) {
-      data <- data |> filter(COMMON_NAME %in% input$common_name)
-    }
+  observeEvent(input$dark_mode, {
+    session$sendCustomMessage("toggleDarkMode", input$dark_mode)
+  })
+
+  available_neighbourhoods <- reactive({
+    data <- street_trees
     
-    sort(unique(data$NEIGHBOURHOOD_NAME))
+    # Apply other filters (if any) that affect what neighbourhoods are available
+    if (!is.null(input$height_range) && length(input$height_range) > 0) {
+        data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+      }
+      if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+        data <- data |> filter(Binomial_Name %in% input$binomial_name)
+      }
+      if (!is.null(input$common_name) && length(input$common_name) > 0) {
+        data <- data |> filter(COMMON_NAME %in% input$common_name)
+      }
+      
+      sort(unique(data$NEIGHBOURHOOD_NAME))
   })
 
   observe({
@@ -695,7 +774,16 @@ available_neighbourhoods <- reactive({
       geom_tile() +
       scale_fill_gradient(low = "white", high = "blue") +
       labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
-      theme_minimal() +
+      theme_minimal(base_family = "sans") +
+      theme(
+        plot.background = element_rect(fill = if (input$dark_mode) "#222" else "white", color = NA),
+        panel.background = element_rect(fill = if (input$dark_mode) "#222" else "white", color = NA),
+        text = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        axis.text = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        axis.title = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        legend.title = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        legend.text = element_text(color = if (input$dark_mode) "#eee" else "black")
+      ) +
       scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
   
     ggplotly(plot, tooltip = "text")  # tooltips
@@ -711,7 +799,16 @@ available_neighbourhoods <- reactive({
                                            "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
       geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
       labs(x = "Height Range", y = "Tree Count") +
-      theme_minimal()
+      theme_minimal(base_family = "sans") +
+      theme(
+        plot.background = element_rect(fill = if (input$dark_mode) "#222" else "white", color = NA),
+        panel.background = element_rect(fill = if (input$dark_mode) "#222" else "white", color = NA),
+        text = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        axis.text = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        axis.title = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        legend.title = element_text(color = if (input$dark_mode) "#eee" else "black"),
+        legend.text = element_text(color = if (input$dark_mode) "#eee" else "black")
+      )
   
     ggplotly(plot, tooltip = "text")  # tooltips
   })
@@ -882,7 +979,7 @@ observe({
       var numBuckets = 8;
       var colors = [
         '#90EE90', // light green
-        '#008000', // green
+        '#3bcc3b', // green
         '#FFFF00', // yellow
         '#FFD700', // gold
         '#FFA500', // orange
