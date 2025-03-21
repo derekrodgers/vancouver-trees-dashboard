@@ -58,6 +58,15 @@ ui <- fluidPage(
   # Browser title
   title = "Vancouver Street Trees Dashboard",
   
+  tags$head(
+    tags$style(HTML("
+      #tree_table table.dataTable tbody tr:hover,
+      #all_trees_table table.dataTable tbody tr:hover {
+        cursor: pointer;
+      }
+    "))
+  ),
+  
   # Title and filters card
   fluidRow(
     column(12, 
