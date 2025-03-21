@@ -123,7 +123,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
-                    column(2, pickerInput("interesting_trees", "👉🏽 Interesting Trees 👈🏽",
+                    column(2, pickerInput("interesting_trees", "🌸 Interesting Trees 🌸",
                                           choices = c("🌸 Cherry & Plum Trees 🌸"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
@@ -511,6 +511,7 @@ available_neighbourhoods <- reactive({
     updatePickerInput(session, "height_range", selected = character(0))
     updatePickerInput(session, "binomial_name", selected = character(0))
     updatePickerInput(session, "common_name", selected = character(0))
+    updatePickerInput(session, "interesting_trees", selected = character(0))
     
     selected_species(NULL)
     selected_tree(NULL)
