@@ -103,34 +103,33 @@ ui <- fluidPage(
               ),
               # Filters & Reset Button Row
               fluidRow(
-                style = "margin-bottom: -5px;",
-                column(10, 
-                      fluidRow(
-                        column(3, pickerInput("neighbourhood", "Neighbourhood",
-                                              choices = sort(unique(street_trees$NEIGHBOURHOOD_NAME)),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%")),
-                        column(3, pickerInput("height_range", "Height Range",
-                                              choices = levels(street_trees$HEIGHT_RANGE),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%")),
-                        column(3, pickerInput("binomial_name", "Binomial Name",
-                                              choices = sort(unique(street_trees$Binomial_Name)),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%")),
-                        column(3, pickerInput("common_name", "Common Name",
-                                              choices = sort(unique(street_trees$COMMON_NAME)),
-                                              multiple = TRUE,
-                                              options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                              width = "100%"))
-                      )
-                ),
-                column(2, div(style = "text-align: right; margin-top: 25px;",  
-                            actionButton("reset_filters", "Reset Filters", class = "btn-danger"))
-                )
+                    column(2, pickerInput("neighbourhood", "Neighbourhood",
+                                          choices = sort(unique(street_trees$NEIGHBOURHOOD_NAME)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("binomial_name", "Binomial Name",
+                                          choices = sort(unique(street_trees$Binomial_Name)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("common_name", "Common Name",
+                                          choices = sort(unique(street_trees$COMMON_NAME)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("height_range", "Height Range",
+                                          choices = levels(street_trees$HEIGHT_RANGE),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("interesting_trees", "👉🏽 Interesting Trees 👈🏽",
+                                          choices = c("Heritage", "Unusual", "Rare", "Largest", "Oldest"),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, div(style = "text-align: right; margin-top: 25px;",  
+                                  actionButton("reset_filters", "Reset Filters", class = "btn-danger")))
               )
           )
     )
