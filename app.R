@@ -716,6 +716,7 @@ available_neighbourhoods <- reactive({
   })
 
   # Tree species count table
+  common_name_trucation_chars <- 45
   output$tree_table <- renderDT({
     data <- filtered_data() |>
       group_by(Binomial_Name, COMMON_NAME) |>
@@ -726,14 +727,14 @@ available_neighbourhoods <- reactive({
         `Common Names` = paste(unique(COMMON_NAME[order(-Count_Common_Name)]), collapse = ", "),
         Count = sum(Count_Common_Name)
       ) |>
-            mutate(
+      mutate(
         `Binomial_Link` = paste0(
           "<a href='https://en.wikipedia.org/wiki/",
           gsub(" ", "_", Binomial_Name),
           "' target='_blank'>", Binomial_Name, "</a>"
         ),
-        `Common Names` = ifelse(nchar(`Common Names`) > 60, 
-                                paste0(substr(`Common Names`, 1, 60), "..."), 
+        `Common Names` = ifelse(nchar(`Common Names`) > common_name_trucation_chars, 
+                                paste0(substr(`Common Names`, 1, common_name_trucation_chars), "..."), 
                                 `Common Names`),
         Count = format(Count, big.mark = ",")
       ) |>
