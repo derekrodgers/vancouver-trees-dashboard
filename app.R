@@ -152,28 +152,56 @@ ui <- fluidPage(
     column(5,  
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Counts by Species", style = "margin-top: 5px; margin-bottom: 10px;"),  
                fluidRow(
-                 column(12, div(style = "display: flex; align-items: center;",
-                                actionButton("reset_species", "Clear Selection", class = "btn btn-info btn-sm"),
-                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("species_count_text"))
-                 ))
+                 column(12,
+                   div(
+                     style = "display: flex; flex-wrap: wrap; align-items: center;",
+ 
+                     div(
+                       style = "flex: 0 0 auto; margin-right: 15px;",
+                       h3("Tree Counts by Species", style = "margin-top: 5px; margin-bottom: 10px;")
+                     ),
+ 
+                     div(
+                       style = "flex: 1 1 auto; text-align: center; font-size: 14px;",
+                       textOutput("species_count_text")
+                     ),
+ 
+                     div(
+                       style = "flex: 0 0 auto; text-align: right;",
+                       actionButton("reset_species", "Clear Selection", class = "btn btn-info btn-xs")
+                     )
+                   )
+                 )
                ),
-               br(),  
                DTOutput("tree_table")
            )
     ),
     column(7,  
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;"),  
                fluidRow(
-                 column(12, div(style = "display: flex; align-items: center;",
-                                actionButton("reset_tree", "Clear Selection", class = "btn btn-info btn-sm"),
-                                span(style = "padding-left: 15px; font-size: 14px;", textOutput("tree_count_text"))
-                 ))
+                 column(12,
+                   div(
+                     style = "display: flex; align-items: center; white-space: nowrap;",
+ 
+                     div(
+                       style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
+                       h3("All Street Trees", style = "margin-top: 1px; margin-bottom: 10px;")
+                     ),
+ 
+                     div(
+                       style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
+                       textOutput("tree_count_text")
+                     ),
+ 
+                     div(
+                       style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
+                       actionButton("reset_tree", "Clear Selection", class = "btn btn-info btn-xs")
+                     )
+                   )
+                 )
                ),
-               br(),  
                DTOutput("all_trees_table")
            )
     )
