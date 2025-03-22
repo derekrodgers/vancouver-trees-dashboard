@@ -42,6 +42,7 @@ street_trees <- street_trees |>
     # Convert to title case
     COMMON_NAME = str_to_title(COMMON_NAME),
     NEIGHBOURHOOD_NAME = str_to_title(NEIGHBOURHOOD_NAME),
+    CIVIC_ADDRESS = paste0(CIVIC_NUMBER, " ", str_to_title(STD_STREET)),
     
     HEIGHT_RANGE = factor(
       str_replace_all(HEIGHT_RANGE, " ", ""),  # Remove spaces
@@ -392,6 +393,35 @@ server <- function(input, output, session) {
   selected_species <- reactiveVal(NULL)
   selected_tree <- reactiveVal(NULL)
   restoring_view <- reactiveVal(FALSE)
+  
+  show_tree_popup <- function(tree_id, save_view = FALSE) {
+    selected_tree(tree_id)
+    selected_species(NULL)
+  
+    tree_info <- filtered_data() |> filter(TREE_ID == tree_id) |> slice(1)
+  
+    if (nrow(tree_info) > 0) {
+      content <- paste0(
+        "<div style='font-size: 14px; width: 400px;'>",
+        "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
+        "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
+        "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
+        "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
+        "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
+        "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
+        "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
+        "</div>"
+      )
+    } else {
+      content <- "No tree info found."
+    }
+  
+    if (save_view) {
+      session$sendCustomMessage("saveCurrentMapView", list())
+    }
+  
+    session$sendCustomMessage("openPopupAfterZoom", list(id = tree_id, content = content))
+  }
 
 available_neighbourhoods <- reactive({
   data <- street_trees
@@ -836,28 +866,7 @@ available_neighbourhoods <- reactive({
     selected_row <- input$all_trees_table_rows_selected
     if (!is.null(selected_row)) {
       tree_id <- filtered_data() |> distinct(TREE_ID) |> slice(selected_row) |> pull(TREE_ID)
-      selected_tree(tree_id)
-      selected_species(NULL)  # Clear species selection if a tree is chosen
-      
-      # Look up the tree information from the filtered data
-      tree_info <- filtered_data() |> dplyr::filter(TREE_ID == tree_id) |> dplyr::slice(1)
-      
-      if(nrow(tree_info) > 0) {
-        content <- paste0(
-          "<div style='font-size: 14px; width: 400px;'>",
-          "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
-          "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
-          "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
-          "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
-          "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
-          "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
-          "</div>"
-        )
-      } else {
-        content <- "No tree info found."
-      }
-      
-      session$sendCustomMessage("openPopupAfterZoom", list(id = tree_id, content = content))
+      show_tree_popup(tree_id)
     }
   })
   
@@ -967,31 +976,7 @@ observe({
   observeEvent(input$tree_map_marker_click, {
     event <- input$tree_map_marker_click
     if (!is.null(event$id)) {
-      selected_tree(event$id)
-      selected_species(NULL)  # Clear species selection if a tree is chosen
-      
-      # Look up the tree information from the filtered data
-      tree_info <- filtered_data() |> dplyr::filter(TREE_ID == event$id) |> dplyr::slice(1)
-      
-      if(nrow(tree_info) > 0) {
-        content <- paste0(
-          "<div style='font-size: 14px; width: 400px;'>",
-          "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
-          "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
-          "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
-          "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
-          "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
-          "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
-          "</div>"
-        )
-      } else {
-        content <- "No tree info found."
-      }
-      
-      # Save the current map view before opening the popup
-      session$sendCustomMessage("saveCurrentMapView", list())
-      
-      session$sendCustomMessage("openPopupAfterZoom", list(id = event$id, content = content))
+      show_tree_popup(event$id, save_view = TRUE)
     }
   })
 
