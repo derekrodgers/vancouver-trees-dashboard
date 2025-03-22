@@ -527,12 +527,6 @@ available_neighbourhoods <- reactive({
                       selected = intersect(input$common_name, available_common_name()))
   })
   
-  observeEvent(input$interesting_trees, {
-    if ("🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
-      cherry_plum_names <- sort(unique(street_trees$COMMON_NAME[grepl("cherry|plum", street_trees$COMMON_NAME, ignore.case = TRUE)]))
-      updatePickerInput(session, "common_name", selected = cherry_plum_names)
-    }
-  })
 
   # change behaviour of map popup's "x"
   observeEvent(input$popup_closed, {
@@ -599,6 +593,9 @@ available_neighbourhoods <- reactive({
     }
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
+    }
+    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
+      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
     }
     
     # Apply species selection from table click
