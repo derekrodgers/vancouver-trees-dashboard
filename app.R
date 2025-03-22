@@ -129,7 +129,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
                     column(2, pickerInput("interesting_trees", "🌴 Interesting Trees 🌴",
-                                          choices = c("🌸 Cherry & Plum Trees 🌸", "VanDusen Botanical Gardens"),
+                                          choices = c("🌸 Cherry & Plum Trees", "🏞️ VanDusen Botanical Gardens"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
@@ -394,12 +394,29 @@ server <- function(input, output, session) {
   selected_tree <- reactiveVal(NULL)
   restoring_view <- reactiveVal(FALSE)
   interesting_areas <- tibble::tibble(
-    label = "VanDusen Botanical Gardens",
+    label = "🏞️ VanDusen Botanical Gardens",
     min_lng = -123.138048600311,
     max_lng = -123.12791305292048,
     min_lat = 49.23785042226124,
     max_lat = 49.241214933282045
   )
+  
+  apply_interesting_tree_filters <- function(data) {
+    if (!is.null(input$interesting_trees)) {
+      if ("🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
+        data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+      }
+      if ("🏞️ VanDusen Botanical Gardens" %in% input$interesting_trees) {
+        data <- data |> filter(
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) >= interesting_areas$min_lng &
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) <= interesting_areas$max_lng &
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1])) >= interesting_areas$min_lat &
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1])) <= interesting_areas$max_lat
+        )
+      }
+    }
+    return(data)
+  }
   
   show_tree_popup <- function(tree_id, save_view = FALSE) {
     selected_tree(tree_id)
@@ -432,6 +449,7 @@ server <- function(input, output, session) {
 
 available_neighbourhoods <- reactive({
   data <- street_trees
+  data <- apply_interesting_tree_filters(data)
   
   # Apply other filters (if any) that affect what neighbourhoods are available
   if (!is.null(input$height_range) && length(input$height_range) > 0) {
@@ -442,9 +460,6 @@ available_neighbourhoods <- reactive({
     }
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
-    }
-    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
-      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
     }
     
     sort(unique(data$NEIGHBOURHOOD_NAME))
@@ -470,6 +485,9 @@ available_neighbourhoods <- reactive({
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
     }
+    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
+      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+    }
 
     # Preserve the original factor order from street_trees$HEIGHT_RANGE
     hr_levels <- levels(street_trees$HEIGHT_RANGE)
@@ -490,6 +508,7 @@ available_neighbourhoods <- reactive({
   # Compute available Binomial Name values based on other filters
   available_binomial_name <- reactive({
     data <- street_trees
+    data <- apply_interesting_tree_filters(data)
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
       data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
     }
@@ -512,6 +531,7 @@ available_neighbourhoods <- reactive({
   # Compute available Common Name values based on other filters
   available_common_name <- reactive({
     data <- street_trees
+    data <- apply_interesting_tree_filters(data)
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
       data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
     }
@@ -520,9 +540,6 @@ available_neighbourhoods <- reactive({
     }
     if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
       data <- data |> filter(Binomial_Name %in% input$binomial_name)
-    }
-    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
-      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
     }
     sort(unique(data$COMMON_NAME))
   })
@@ -588,6 +605,7 @@ available_neighbourhoods <- reactive({
   # Reactive Data Filtering
   filtered_data <- reactive({
     data <- street_trees
+    data <- apply_interesting_tree_filters(data)
   
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
       data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
@@ -600,20 +618,6 @@ available_neighbourhoods <- reactive({
     }
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
-    }
-    if (!is.null(input$interesting_trees)) {
-      if ("🌸 Cherry & Plum Trees 🌸" %in% input$interesting_trees) {
-        data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
-      }
- 
-      if ("VanDusen Botanical Gardens" %in% input$interesting_trees) {
-        data <- data |> filter(
-          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) >= interesting_areas$min_lng &
-          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) <= interesting_areas$max_lng &
-          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1])) >= interesting_areas$min_lat &
-          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1])) <= interesting_areas$max_lat
-        )
-      }
     }
     
     # Apply species selection from table click
@@ -812,7 +816,7 @@ available_neighbourhoods <- reactive({
               options = list(
                 pageLength = 100,
                 lengthMenu = list(c(10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000), 
-                                  c("10", "50", "100", "250", "500", "1K", "2.5K", "5K", "10K", "25K")),
+                                  c("10", "50", "100", "250", "500", "1k", "2.5k", "5k", "10k", "25k")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
                 scrollY = "370px"
