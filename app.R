@@ -633,17 +633,31 @@ available_neighbourhoods <- reactive({
     return(data)
   })
 
-  # Render Map (Initially Empty, Will Update via Proxy)
+  # Original OSM Leaflet Map
+  # # Render Map (Initially Empty, Will Update via Proxy)
+  # output$tree_map <- renderLeaflet({
+  #   leaflet() |> # leaflet(options = leafletOptions(maxZoom = 22)) |>
+  #     addTiles() |>
+  #     setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
+  #     htmlwidgets::onRender("
+  #   function(el, x) {
+  #     window.treeMap = this;
+  #     this.addControl(new L.Control.Fullscreen());
+  #   }
+  # ")
+  # })
+
   output$tree_map <- renderLeaflet({
-    leaflet() |>
-      addTiles() |>
+    leaflet(options = leafletOptions(maxZoom = 21)) |>
+      addProviderTiles(providers$Esri.WorldImagery, options = providerTileOptions(maxZoom = 21)) |>
+      #addProviderTiles(providers$CartoDB.Positron, options = providerTileOptions(maxZoom = 21)) |>
       setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
       htmlwidgets::onRender("
-    function(el, x) {
-      window.treeMap = this;
-      this.addControl(new L.Control.Fullscreen());
-    }
-  ")
+        function(el, x) {
+          window.treeMap = this;
+          this.addControl(new L.Control.Fullscreen());
+        }
+      ")
   })
 
   # Street view
