@@ -251,7 +251,7 @@ ui <- fluidPage(
     column(5, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Heights, All Neighbourhoods", style = "margin-top: 1px; margin-bottom: 1px;"),
+               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
                plotlyOutput("height_distribution", height = "420px")
            )
     ),
@@ -633,32 +633,31 @@ available_neighbourhoods <- reactive({
     return(data)
   })
 
-  # Original OSM Leaflet Map
-  # # Render Map (Initially Empty, Will Update via Proxy)
-  # output$tree_map <- renderLeaflet({
-  #   leaflet() |> # leaflet(options = leafletOptions(maxZoom = 22)) |>
-  #     addTiles() |>
-  #     setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
-  #     htmlwidgets::onRender("
-  #   function(el, x) {
-  #     window.treeMap = this;
-  #     this.addControl(new L.Control.Fullscreen());
-  #   }
-  # ")
-  # })
-
+  # Render Map (Initially Empty, Will Update via Proxy)
   output$tree_map <- renderLeaflet({
-    leaflet(options = leafletOptions(maxZoom = 21)) |>
-      addProviderTiles(providers$Esri.WorldImagery, options = providerTileOptions(maxZoom = 21)) |>
-      #addProviderTiles(providers$CartoDB.Positron, options = providerTileOptions(maxZoom = 21)) |>
+    leaflet() |> # leaflet(options = leafletOptions(maxZoom = 22)) |>
+      addTiles() |>
       setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
       htmlwidgets::onRender("
-        function(el, x) {
-          window.treeMap = this;
-          this.addControl(new L.Control.Fullscreen());
-        }
-      ")
+    function(el, x) {
+      window.treeMap = this;
+      this.addControl(new L.Control.Fullscreen());
+    }
+  ")
   })
+
+  # # Satellite imagery map
+  # output$tree_map <- renderLeaflet({
+  #   leaflet(options = leafletOptions(maxZoom = 21)) |>
+  #     addProviderTiles(providers$Esri.WorldImagery, options = providerTileOptions(maxZoom = 21)) |>
+  #     setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
+  #     htmlwidgets::onRender("
+  #       function(el, x) {
+  #         window.treeMap = this;
+  #         this.addControl(new L.Control.Fullscreen());
+  #       }
+  #     ")
+  # })
 
   # Street view
   observe({
