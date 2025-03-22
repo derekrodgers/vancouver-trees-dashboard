@@ -849,7 +849,6 @@ available_neighbourhoods <- reactive({
           "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
           "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
           "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
-          "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
           "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
           "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
           "</div>"
@@ -981,7 +980,6 @@ observe({
           "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
           "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
           "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
-          "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
           "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
           "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
           "</div>"
