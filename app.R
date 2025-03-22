@@ -129,7 +129,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
                     column(2, pickerInput("interesting_trees", "🌴 Interesting Trees 🌴",
-                                          choices = c("🌸 Cherry & Plum Trees", "🏞️ VanDusen Botanical Gardens"),
+                                          choices = c("🌸 Cherry & Plum Trees", "🏞️ VanDusen Botanical Garden"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
@@ -394,7 +394,7 @@ server <- function(input, output, session) {
   selected_tree <- reactiveVal(NULL)
   restoring_view <- reactiveVal(FALSE)
   interesting_areas <- tibble::tibble(
-    label = "🏞️ VanDusen Botanical Gardens",
+    label = "🏞️ VanDusen Botanical Garden",
     min_lng = -123.138048600311,
     max_lng = -123.12791305292048,
     min_lat = 49.23785042226124,
@@ -406,7 +406,7 @@ server <- function(input, output, session) {
       if ("🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
         data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
       }
-      if ("🏞️ VanDusen Botanical Gardens" %in% input$interesting_trees) {
+      if ("🏞️ VanDusen Botanical Garden" %in% input$interesting_trees) {
         data <- data |> filter(
           as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) >= interesting_areas$min_lng &
           as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) <= interesting_areas$max_lng &
