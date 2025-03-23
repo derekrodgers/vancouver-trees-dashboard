@@ -269,23 +269,23 @@ ui <- fluidPage(
     )
   ),
 
-  # Heatmap / bar chart row
-  fluidRow(
-    column(5, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("height_distribution", height = "420px")
-           )
-    ),
-    column(7, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "420px")
-           )
-    )
-  ),
+  # # Heatmap / bar chart row
+  # fluidRow(
+  #   column(5, 
+  #          div(class = "panel panel-default", 
+  #              style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+  #              h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
+  #              plotlyOutput("height_distribution", height = "420px")
+  #          )
+  #   ),
+  #   column(7, 
+  #          div(class = "panel panel-default", 
+  #              style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+  #              h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+  #              plotlyOutput("heatmap", height = "420px")
+  #          )
+  #   )
+  # ),
 
   # Footer row
   fluidRow(
