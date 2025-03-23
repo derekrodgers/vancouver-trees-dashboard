@@ -25,6 +25,8 @@ library(data.table)  # Load only the cols we need using data.table::fread -- it'
 
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
+
+
 street_trees <- fread(
   "data/raw/street-trees.csv",
   sep = ";",
@@ -592,6 +594,9 @@ available_neighbourhoods <- reactive({
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
     }
+    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
+      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+    }
 
     # Preserve the original factor order from street_trees$HEIGHT_RANGE
     hr_levels <- levels(street_trees$HEIGHT_RANGE)
@@ -936,13 +941,17 @@ available_neighbourhoods <- reactive({
   })
   
   # Handle tree selection from table clicks
-  observeEvent(input$all_trees_table_rows_selected, {
-    selected_row <- input$all_trees_table_rows_selected
-    if (!is.null(selected_row)) {
-      tree_id <- filtered_data() |> distinct(TREE_ID) |> slice(selected_row) |> pull(TREE_ID)
+# Handle tree selection from table clicks using unified selection
+observeEvent(input$all_trees_table_rows_selected, {
+  selected_row <- input$all_trees_table_rows_selected
+  if (!is.null(selected_row) && length(selected_row) > 0) {
+    data <- filtered_data()
+    if (selected_row <= nrow(data)) {
+      tree_id <- data$TREE_ID[selected_row]
       show_tree_popup(tree_id, save_view = TRUE)
     }
-  })
+  }
+})
   
   # Add Unique Species Count Text
   output$species_count_text <- renderText({
