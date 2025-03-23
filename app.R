@@ -366,17 +366,6 @@ ui <- fluidPage(
     '))
   ),
 
-tags$head(
-  tags$script(HTML("
-Shiny.addCustomMessageHandler('centerMapOnTree', function(message) {
-  var map = window.treeMap;
-  if(map) {
-    map.setView([message.lat, message.lon], map.getZoom());
-  }
-});
-  "))
-),
-
   # Fix popup / zoom conflict
   tags$script(HTML('
     // Custom handler to open popup after zoom
@@ -539,42 +528,34 @@ server <- function(input, output, session) {
     return(data)
   }
   
-show_tree_popup <- function(tree_id, save_view = FALSE) {
-  # Set the selected tree and clear any species selection
-  selected_tree(tree_id)
-  selected_species(NULL)
+  show_tree_popup <- function(tree_id, save_view = FALSE) {
+    selected_tree(tree_id)
+    selected_species(NULL)
   
-  # Use isolate() to safely access the filtered data even outside a reactive context.
-  tree_info <- isolate(filtered_data()) |> 
-    filter(TREE_ID == tree_id) |> 
-    slice(1)
+    tree_info <- filtered_data() |> filter(TREE_ID == tree_id) |> slice(1)
   
-  if (nrow(tree_info) > 0) {
-    content <- paste0(
-      "<div style='font-size: 14px; width: 400px;'>",
-      "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
-      "<a href='https://en.wikipedia.org/wiki/", 
-          gsub(" ", "_", tree_info$Binomial_Name), 
-          "' target='_blank'>wiki</a>)<br>",
-      "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
-      "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
-      "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
-      "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
-      "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=",
-          tree_info$LATITUDE, ",", tree_info$LONGITUDE, 
-          "' target='_blank'>View</a>",
-      "</div>"
-    )
-  } else {
-    content <- "No tree info found."
+    if (nrow(tree_info) > 0) {
+      content <- paste0(
+        "<div style='font-size: 14px; width: 400px;'>",
+        "<b>Binomial Name:</b> ", tree_info$Binomial_Name, " (",
+        "<a href='https://en.wikipedia.org/wiki/", gsub(' ', '_', tree_info$Binomial_Name), "' target='_blank'>wiki</a>)<br>",
+        "<b>Common Name:</b> ", tree_info$COMMON_NAME, "<br>",
+        "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
+        "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
+        "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
+        "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$LATITUDE, ",", tree_info$LONGITUDE, "' target='_blank'>View</a>",
+        "</div>"
+      )
+    } else {
+      content <- "No tree info found."
+    }
+  
+    if (save_view) {
+      session$sendCustomMessage("saveCurrentMapView", list())
+    }
+  
+    session$sendCustomMessage("openPopupAfterZoom", list(id = tree_id, content = content))
   }
-  
-  if (save_view) {
-    session$sendCustomMessage("saveCurrentMapView", list())
-  }
-  
-  session$sendCustomMessage("openPopupAfterZoom", list(id = tree_id, content = content))
-}
 
 available_neighbourhoods <- reactive({
   data <- base_data()
@@ -960,27 +941,13 @@ available_neighbourhoods <- reactive({
   })
   
   # Handle tree selection from table clicks
-observeEvent(input$all_trees_table_rows_selected, {
-  selected_row <- input$all_trees_table_rows_selected
-  if (!is.null(selected_row) && length(selected_row) > 0) {
-    data <- filtered_data()
-    if (selected_row <= nrow(data)) {
-      # Extract the selected tree's details from the filtered data
-      tree_info <- data[selected_row, ]
-      tree_id <- tree_info$TREE_ID
-      lat <- tree_info$LATITUDE
-      lon <- tree_info$LONGITUDE
-      
-      # Send a custom message to center the map on the selected tree at the current zoom level
-      session$sendCustomMessage("centerMapOnTree", list(lat = lat, lon = lon))
-      
-      # After a short delay, call the common popup function to show tree details
-      later::later(function() {
-         show_tree_popup(tree_id, save_view = TRUE)
-      }, delay = 0.5)
+  observeEvent(input$all_trees_table_rows_selected, {
+    selected_row <- input$all_trees_table_rows_selected
+    if (!is.null(selected_row)) {
+      tree_id <- filtered_data() |> distinct(TREE_ID) |> slice(selected_row) |> pull(TREE_ID)
+      show_tree_popup(tree_id, save_view = TRUE)
     }
-  }
-})
+  })
   
   # Add Unique Species Count Text
   output$species_count_text <- renderText({
