@@ -763,40 +763,40 @@ observe({
 })
 
   # Heatmap of Tree Count x Neighbourhood
-  output$heatmap <- renderPlotly({
-    data <- filtered_data()
+  # output$heatmap <- renderPlotly({
+  #   data <- filtered_data()
   
-    heatmap_data <- data |>
-      count(NEIGHBOURHOOD_NAME, HEIGHT_RANGE)
+  #   heatmap_data <- data |>
+  #     count(NEIGHBOURHOOD_NAME, HEIGHT_RANGE)
   
-    # heatmap with formatted tooltips
-    plot <- ggplot(heatmap_data, aes(x = HEIGHT_RANGE, y = NEIGHBOURHOOD_NAME, fill = n, 
-                                     text = paste0("<b>Neighbourhood</b>: ", NEIGHBOURHOOD_NAME, "<br>",
-                                                   "<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
-                                                   "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
-      geom_tile() +
-      scale_fill_gradient(low = "white", high = "blue") +
-      labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
-      theme_minimal() +
-      scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
+  #   # heatmap with formatted tooltips
+  #   plot <- ggplot(heatmap_data, aes(x = HEIGHT_RANGE, y = NEIGHBOURHOOD_NAME, fill = n, 
+  #                                    text = paste0("<b>Neighbourhood</b>: ", NEIGHBOURHOOD_NAME, "<br>",
+  #                                                  "<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
+  #                                                  "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
+  #     geom_tile() +
+  #     scale_fill_gradient(low = "white", high = "blue") +
+  #     labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
+  #     theme_minimal() +
+  #     scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
   
-    ggplotly(plot, tooltip = "text")  # tooltips
-  })
+  #   ggplotly(plot, tooltip = "text")  # tooltips
+  # })
 
   # Tree Height Distribution (All Neighbourhoods)
-  output$height_distribution <- renderPlotly({
-    data <- filtered_data() |>
-      count(HEIGHT_RANGE)  # Compute counts beforehand
+  # output$height_distribution <- renderPlotly({
+  #   data <- filtered_data() |>
+  #     count(HEIGHT_RANGE)  # Compute counts beforehand
   
-    plot <- ggplot(data, aes(x = HEIGHT_RANGE, y = n, 
-                             text = paste0("<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
-                                           "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
-      geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
-      labs(x = "Height Range", y = "Tree Count") +
-      theme_minimal()
+  #   plot <- ggplot(data, aes(x = HEIGHT_RANGE, y = n, 
+  #                            text = paste0("<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
+  #                                          "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
+  #     geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
+  #     labs(x = "Height Range", y = "Tree Count") +
+  #     theme_minimal()
   
-    ggplotly(plot, tooltip = "text")  # tooltips
-  })
+  #   ggplotly(plot, tooltip = "text")  # tooltips
+  # })
 
   output$all_trees_table <- renderDT({
     data <- filtered_data() |>
