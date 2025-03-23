@@ -414,9 +414,15 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  # Reactive for the manual "Interesting Trees" filter
+  base_data <- reactive({
+    street_trees |> apply_interesting_tree_filters()
+  })
+
   selected_species <- reactiveVal(NULL)
   selected_tree <- reactiveVal(NULL)
   restoring_view <- reactiveVal(FALSE)
+  
   interesting_areas <- tibble::tibble(
     label = "🏞️ VanDusen Botanical Garden",
     min_lng = -123.138048600311,
@@ -426,18 +432,27 @@ server <- function(input, output, session) {
   )
   
   apply_interesting_tree_filters <- function(data) {
-    if (!is.null(input$interesting_trees)) {
+    if (!is.null(input$interesting_trees) && length(input$interesting_trees) > 0) {
+      # Initialize a logical vector with FALSE for each row
+      filter_condition <- rep(FALSE, nrow(data))
+      
+      # If 'Cherry & Plum Trees' is selected, mark rows matching the pattern
       if ("🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
-        data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
+        filter_condition <- filter_condition | grepl("cherry|plum", data$COMMON_NAME, ignore.case = TRUE)
       }
+      
+      # If 'VanDusen Botanical Garden' is selected, mark rows within the geographic bounds
       if ("🏞️ VanDusen Botanical Garden" %in% input$interesting_trees) {
-        data <- data |> filter(
-          LONGITUDE >= interesting_areas$min_lng &
-          LONGITUDE <= interesting_areas$max_lng &
-          LATITUDE >= interesting_areas$min_lat &
-          LATITUDE <= interesting_areas$max_lat
+        filter_condition <- filter_condition | (
+          data$LONGITUDE >= interesting_areas$min_lng &
+          data$LONGITUDE <= interesting_areas$max_lng &
+          data$LATITUDE >= interesting_areas$min_lat &
+          data$LATITUDE <= interesting_areas$max_lat
         )
       }
+      
+      # Subset the data to rows that satisfy at least one condition
+      data <- data[filter_condition, ]
     }
     return(data)
   }
@@ -472,8 +487,7 @@ server <- function(input, output, session) {
   }
 
 available_neighbourhoods <- reactive({
-  data <- street_trees
-  data <- apply_interesting_tree_filters(data)
+  data <- base_data()
   
   # Apply other filters (if any) that affect what neighbourhoods are available
   if (!is.null(input$height_range) && length(input$height_range) > 0) {
@@ -497,7 +511,7 @@ available_neighbourhoods <- reactive({
 
   # Compute available Height Range values based on other filters
   available_height_range <- reactive({
-    data <- street_trees
+    data <- base_data()
     
     # Apply the other filters
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
@@ -531,8 +545,7 @@ available_neighbourhoods <- reactive({
 
   # Compute available Binomial Name values based on other filters
   available_binomial_name <- reactive({
-    data <- street_trees
-    data <- apply_interesting_tree_filters(data)
+    data <- base_data()
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
       data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
     }
@@ -554,8 +567,7 @@ available_neighbourhoods <- reactive({
 
   # Compute available Common Name values based on other filters
   available_common_name <- reactive({
-    data <- street_trees
-    data <- apply_interesting_tree_filters(data)
+    data <- base_data()
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
       data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
     }
@@ -624,8 +636,7 @@ available_neighbourhoods <- reactive({
 
   # Reactive Data Filtering
   filtered_data <- reactive({
-    data <- street_trees
-    data <- apply_interesting_tree_filters(data)
+    data <- base_data()
   
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
       data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
