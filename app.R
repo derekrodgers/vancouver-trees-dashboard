@@ -828,8 +828,8 @@ available_neighbourhoods <- reactive({
               colnames = c("Tree ID", "Binomial Name", "Common Name", "Neighbourhood", "Height Range", "Google Maps Link"),
               options = list(
                 pageLength = 100,
-                lengthMenu = list(c(10, 50, 100, 200, 300), 
-                                  c("10", "50", "100", "200", "300")),
+                lengthMenu = list(c(10, 50, 100, 500, 1000), 
+                                  c("10", "50", "100", "500", "1000")),
                 autoWidth = TRUE,
                 searchHighlight = TRUE,
                 scrollY = "370px"
