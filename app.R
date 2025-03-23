@@ -419,6 +419,73 @@ server <- function(input, output, session) {
     street_trees |> apply_interesting_tree_filters()
   })
 
+  # Reactive for kriging computation with debounce to avoid excessive recomputation
+  kriging_result <- reactive({
+    data <- filtered_data()
+    if(nrow(data) > 1) {
+      # Calculate bounds from the filtered data
+      minLng <- min(data$LONGITUDE, na.rm = TRUE)
+      maxLng <- max(data$LONGITUDE, na.rm = TRUE)
+      minLat <- min(data$LATITUDE, na.rm = TRUE)
+      maxLat <- max(data$LATITUDE, na.rm = TRUE)
+  
+      grid_size <- ifelse(nrow(data) > 10000, 50, 100)
+  
+      grid <- expand.grid(
+        lng = seq(minLng, maxLng, length.out = grid_size),
+        lat = seq(minLat, maxLat, length.out = grid_size)
+      )
+      coordinates(grid) <- ~lng+lat
+      proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
+  
+      # Compute Tree Density
+      density_counts <- as.data.frame(table(cut(data$LONGITUDE, 50), cut(data$LATITUDE, 50)))
+      names(density_counts) <- c("lng", "lat", "tree_density")
+  
+      grid_df <- as.data.frame(grid)
+      density_counts <- merge(grid_df, density_counts, by = c("lng", "lat"), all.x = TRUE)
+      density_counts$tree_density[is.na(density_counts$tree_density)] <- 0
+  
+      coordinates(density_counts) <- ~lng+lat
+      proj4string(density_counts) <- CRS("+proj=longlat +datum=WGS84")
+  
+      print("Starting kriging...")
+      kriging_model <- gstat::gstat(
+        formula = tree_density ~ 1, locations = density_counts, nmax = 10, set = list(idp = 2)
+      )
+      print("Kriging model created. Running prediction...")
+      flush.console()
+  
+      interpolated <- predict(kriging_model, grid)
+  
+      # Convert to raster
+      rast <- rasterFromXYZ(as.data.frame(interpolated)[, c("lng", "lat", "var1.pred")])
+      crs(rast) <- CRS("+proj=longlat +datum=WGS84")
+  
+      max_val <- max(interpolated$var1.pred, na.rm = TRUE)
+      min_val <- min(interpolated$var1.pred, na.rm = TRUE)
+  
+      result <- list()
+      
+      if (max_val != min_val) {
+        # Normalize predictions
+        interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
+        result$pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")
+      } else {
+        result$pal <- NULL
+      }
+  
+      result$rast <- rast
+      result$interpolated <- interpolated
+      return(result)
+    } else {
+      return(NULL)
+    }
+  })
+  
+  # Debounced version of kriging_result to limit frequent recomputation
+  kriging_result_debounced <- debounce(kriging_result, 1000)
+
   selected_species <- reactiveVal(NULL)
   selected_tree <- reactiveVal(NULL)
   restoring_view <- reactiveVal(FALSE)
@@ -632,6 +699,9 @@ available_neighbourhoods <- reactive({
   # Reset tree selection
   observeEvent(input$reset_tree, {
     selected_tree(NULL)
+    # Clear row selection in the 'all_trees_table' DT
+    proxy <- dataTableProxy("all_trees_table")
+    selectRows(proxy, integer(0))
   })
 
   # Reactive Data Filtering
@@ -713,66 +783,31 @@ available_neighbourhoods <- reactive({
   })
 
 # Dynamic filter updates
-observe({
-  data <- filtered_data()
-
-  if (nrow(data) > 1) {
-    coords <- data
-    coordinates(coords) <- ~LONGITUDE+LATITUDE
-    proj4string(coords) <- CRS("+proj=longlat +datum=WGS84")
-
-
-    grid_size <- ifelse(nrow(coords) > 10000, 50, 100)
-
-    grid <- expand.grid(
-      lng = seq(min(data$LONGITUDE, na.rm = TRUE), max(data$LONGITUDE, na.rm = TRUE), length.out = grid_size),
-      lat = seq(min(data$LATITUDE, na.rm = TRUE), max(data$LATITUDE, na.rm = TRUE), length.out = grid_size)
-    )
-    coordinates(grid) <- ~lng+lat
-    proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
-
-    # Compute Tree Density
-    density_counts <- as.data.frame(table(cut(data$LONGITUDE, 50), cut(data$LATITUDE, 50)))
-    names(density_counts) <- c("lng", "lat", "tree_density")
-
-    grid_df <- as.data.frame(grid)
-    density_counts <- merge(grid_df, density_counts,
-                            by = c("lng", "lat"), all.x = TRUE)
-    density_counts$tree_density[is.na(density_counts$tree_density)] <- 0
-
-    coordinates(density_counts) <- ~lng+lat
-    proj4string(density_counts) <- CRS("+proj=longlat +datum=WGS84")
-
-    print("Starting kriging...")
-    kriging_model <- gstat::gstat(
-      formula = tree_density ~ 1, locations = density_counts, nmax = 10, set = list(idp = 2)
-    )
-    print("Kriging model created. Running prediction...")
-    flush.console()
-
-    interpolated <- predict(kriging_model, grid)
-
-    # Convert to raster
-    rast <- rasterFromXYZ(as.data.frame(interpolated)[, c("lng", "lat", "var1.pred")])
-    crs(rast) <- CRS("+proj=longlat +datum=WGS84")
-
-    max_val <- max(interpolated$var1.pred, na.rm = TRUE)
-    min_val <- min(interpolated$var1.pred, na.rm = TRUE)
-
-    if (max_val != min_val) {
-      interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
- 
-      pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")
- 
-      leafletProxy("tree_map") |>
-        clearHeatmap() |>  
-        addRasterImage(rast, colors = pal, opacity = 0.7) |>
-        addLegend(pal = pal, values = interpolated$var1.pred, title = "Tree Density")
+  observe({
+    if (restoring_view()) return()
+    
+    res <- kriging_result_debounced()
+    
+    if(!is.null(res)) {
+      # Use the computed raster and palette to update the leaflet map
+      interpolated <- res$interpolated
+      rast <- res$rast
+      pal <- res$pal
+      
+      if (!is.null(pal)) {
+        leafletProxy("tree_map") %>%
+          clearHeatmap() %>%
+          addRasterImage(rast, colors = pal, opacity = 0.7) %>%
+          addLegend(pal = pal, values = interpolated$var1.pred, title = "Tree Density")
+      } else {
+        leafletProxy("tree_map") %>% clearHeatmap()
+      }
     } else {
-      leafletProxy("tree_map") |> clearHeatmap()
+      leafletProxy("tree_map") %>%
+        clearHeatmap() %>%
+        setView(lng = -123.1216, lat = 49.2827, zoom = 12)
     }
-  }
-})
+  })
 
   # Heatmap of Tree Count x Neighbourhood
   output$heatmap <- renderPlotly({
@@ -1017,6 +1052,7 @@ observe({
 
   observeEvent(input$reset_map, {
     selected_tree(NULL)
+    selected_species(NULL)
     later::later(function() {
       session$sendCustomMessage("restorePrevMapView", list())
     }, delay = 0.2)
