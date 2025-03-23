@@ -456,7 +456,7 @@ server <- function(input, output, session) {
         "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
         "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
         "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
-        "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
+        "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$LATITUDE, ",", tree_info$LONGITUDE, "' target='_blank'>View</a>",
         "</div>"
       )
     } else {
@@ -704,7 +704,7 @@ available_neighbourhoods <- reactive({
 observe({
   data <- filtered_data()
 
-  if (nrow(data) > 0) {
+  if (nrow(data) > 1) {
     coords <- data
     coordinates(coords) <- ~LONGITUDE+LATITUDE
     proj4string(coords) <- CRS("+proj=longlat +datum=WGS84")
