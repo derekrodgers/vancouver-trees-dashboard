@@ -24,8 +24,23 @@ library(leaflet.extras)  # For heatmap layers in Leaflet
 #     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
 
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
-street_trees <- read_csv2("data/raw/street-trees.csv")
 
+# Load only the cols we need
+street_trees <- read_csv2(
+  "data/raw/street-trees.csv",
+  col_select = c(
+    TREE_ID,
+    CIVIC_NUMBER,
+    STD_STREET,
+    GENUS_NAME,
+    SPECIES_NAME,
+    COMMON_NAME,
+    NEIGHBOURHOOD_NAME,
+    HEIGHT_RANGE,
+    DATE_PLANTED,
+    geo_point_2d
+  )
+)
 #source("src/preprocessing.R")
 
 # Preprocessing
@@ -60,7 +75,8 @@ street_trees <- street_trees |>
     # Parse lat/lon directly from geo_point_2d
     LATITUDE = as.numeric(str_split_fixed(geo_point_2d, ",\\s*", 2)[, 1]),
     LONGITUDE = as.numeric(str_split_fixed(geo_point_2d, ",\\s*", 2)[, 2])
-  )
+  ) |> 
+  dplyr::select(-geo_point_2d) # Don't need this anymore
 
 ui <- fluidPage(
   # Browser title
