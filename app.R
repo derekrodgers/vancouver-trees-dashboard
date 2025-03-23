@@ -705,32 +705,27 @@ observe({
   data <- filtered_data()
 
   if (nrow(data) > 0) {
-    coords <- data[, c("LONGITUDE", "LATITUDE")]
-    names(coords) <- c("lng", "lat")
-
-    # Convert to spatial points
-    coordinates(coords) <- ~lng+lat
+    coords <- data
+    coordinates(coords) <- ~LONGITUDE+LATITUDE
     proj4string(coords) <- CRS("+proj=longlat +datum=WGS84")
 
-    if (nrow(coords) == 0 || !all(c("lng", "lat") %in% names(coords)) ||
-      any(is.na(coords$lng)) || any(is.na(coords$lat))) return()
 
     grid_size <- ifelse(nrow(coords) > 10000, 50, 100)
 
     grid <- expand.grid(
-      lng = seq(min(coords$lng, na.rm = TRUE), max(coords$lng, na.rm = TRUE), length.out = grid_size),
-      lat = seq(min(coords$lat, na.rm = TRUE), max(coords$lat, na.rm = TRUE), length.out = grid_size)
+      lng = seq(min(data$LONGITUDE, na.rm = TRUE), max(data$LONGITUDE, na.rm = TRUE), length.out = grid_size),
+      lat = seq(min(data$LATITUDE, na.rm = TRUE), max(data$LATITUDE, na.rm = TRUE), length.out = grid_size)
     )
     coordinates(grid) <- ~lng+lat
     proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
 
     # Compute Tree Density
     density_counts <- as.data.frame(table(cut(data$LONGITUDE, 50), cut(data$LATITUDE, 50)))
-    names(density_counts) <- c("lng_bin", "lat_bin", "tree_density")
+    names(density_counts) <- c("lng", "lat", "tree_density")
 
     grid_df <- as.data.frame(grid)
     density_counts <- merge(grid_df, density_counts,
-                            by.x = c("lng", "lat"), by.y = c("lng_bin", "lat_bin"), all.x = TRUE)
+                            by = c("lng", "lat"), all.x = TRUE)
     density_counts$tree_density[is.na(density_counts$tree_density)] <- 0
 
     coordinates(density_counts) <- ~lng+lat
@@ -752,18 +747,18 @@ observe({
     max_val <- max(interpolated$var1.pred, na.rm = TRUE)
     min_val <- min(interpolated$var1.pred, na.rm = TRUE)
 
-    if (max_val == min_val) {
-      interpolated$var1.pred <- 0
-    } else {
+    if (max_val != min_val) {
       interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
+ 
+      pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")
+ 
+      leafletProxy("tree_map") |>
+        clearHeatmap() |>  
+        addRasterImage(rast, colors = pal, opacity = 0.7) |>
+        addLegend(pal = pal, values = interpolated$var1.pred, title = "Tree Density")
+    } else {
+      leafletProxy("tree_map") |> clearHeatmap()
     }
-
-    pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")
-
-    leafletProxy("tree_map") |>
-      clearHeatmap() |>  
-      addRasterImage(rast, colors = pal, opacity = 0.7) |>
-      addLegend(values = interpolated$var1.pred, title = "Tree Density")
   }
 })
 
@@ -805,11 +800,11 @@ observe({
 
   output$all_trees_table <- renderDT({
     data <- filtered_data() |>
-      dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, geo_point_2d) |>
+      dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, LATITUDE, LONGITUDE) |>
       mutate(
         `Google Maps Link` = paste0(
           "<a href='https://www.google.com/maps/search/?api=1&query=",
-          geo_point_2d, "' target='_blank'>View</a>"
+          LATITUDE, ",", LONGITUDE, "' target='_blank'>View</a>"
         ),
         # Capitalize first word, lowercase second word (otherwise link doesn't work)
         `Binomial_Link` = paste0(
@@ -822,7 +817,7 @@ observe({
           "' target='_blank'>", Binomial_Name, "</a>"
         )
       ) |>
-      dplyr::select(-geo_point_2d)  
+      dplyr::select(-LATITUDE, -LONGITUDE)  
   
     datatable(data |> dplyr::select(TREE_ID, `Binomial_Link`, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, `Google Maps Link`),  
               escape = FALSE,
