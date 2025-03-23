@@ -1065,13 +1065,18 @@ observe({
   observeEvent(input$reset_zoom, {
     data <- filtered_data()
     if(nrow(data) > 0) {
-      minLng <- min(data$LONGITUDE)
-      maxLng <- max(data$LONGITUDE)
-      minLat <- min(data$LATITUDE)
-      maxLat <- max(data$LATITUDE)
-      
-      leafletProxy("tree_map", data = data) |>
-        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+      if(nrow(data) == 1) {
+        leafletProxy("tree_map", data = data) |>
+          setView(lng = data$LONGITUDE[[1]], lat = data$LATITUDE[[1]], zoom = 15)
+      } else {
+        minLng <- min(data$LONGITUDE, na.rm = TRUE)
+        maxLng <- max(data$LONGITUDE, na.rm = TRUE)
+        minLat <- min(data$LATITUDE, na.rm = TRUE)
+        maxLat <- max(data$LATITUDE, na.rm = TRUE)
+        
+        leafletProxy("tree_map", data = data) |>
+          fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+      }
     } else {
       leafletProxy("tree_map") |>
         setView(lng = -123.1216, lat = 49.2827, zoom = 12)
