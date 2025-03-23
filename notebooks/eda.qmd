@@ -1,0 +1,47 @@
+---
+title: "EDA: Street Trees"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+# Source preprocessing code
+street_trees <- read_csv2("../data/raw/street-trees.csv")
+source("../src/preprocessing.R")
+```
+
+Lat / lon missingness:
+
+```{r}
+# Show missing summary for LATITUDE and LONGITUDE
+street_trees |> 
+  select(LATITUDE, LONGITUDE) |> 
+  summarise(
+    missing_lat = sum(is.na(LATITUDE)),
+    missing_lon = sum(is.na(LONGITUDE)),
+    total_rows = n()
+  )
+```
+
+Visualize missingness:
+
+```{r}
+library(naniar)
+
+street_trees |> 
+  select(LATITUDE, LONGITUDE) |>
+  gg_miss_var(show_pct = TRUE)
+```
+
+Do they have addresses?
+
+```{r}
+# Filter rows where LATITUDE or LONGITUDE is NA
+street_trees_missing_coords <- street_trees |> 
+  filter(is.na(LATITUDE) | is.na(LONGITUDE))
+
+# View a few sample rows
+street_trees_missing_coords |> 
+  head(50)
+```
