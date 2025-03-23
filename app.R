@@ -23,30 +23,11 @@ library(leaflet.extras)  # For heatmap layers in Leaflet
 # Deploy location:
 #     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
 
+street_trees <- read_csv2("data/raw/street-trees.csv")
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
-# Load only the cols we need
-street_trees <- read_csv2(
-  "data/raw/street-trees.csv",
-  col_select = c(
-    TREE_ID,
-    CIVIC_NUMBER,
-    STD_STREET,
-    GENUS_NAME,
-    SPECIES_NAME,
-    COMMON_NAME,
-    NEIGHBOURHOOD_NAME,
-    HEIGHT_RANGE,
-    DATE_PLANTED,
-    geo_point_2d
-  )
-)
-
-#source("src/preprocessing.R")
-
 # Preprocessing
-street_trees <- street_trees |> 
-  drop_na(geo_point_2d) |>
+street_trees <- street_trees |>
   mutate(
     # Construct Binomial_Name: capitalize genus and make species lowercase, then remove any trailing " x"
     Binomial_Name = paste0(
@@ -55,29 +36,24 @@ street_trees <- street_trees |>
       " ",
       tolower(SPECIES_NAME)
     ),
-    Binomial_Name = gsub(" x$", "", Binomial_Name), # species ending in x and xx break wiki links
+    Binomial_Name = gsub(" x$", "", Binomial_Name),
     Binomial_Name = gsub(" xx$", "", Binomial_Name),
-
+    
     # Convert to title case
     COMMON_NAME = str_to_title(COMMON_NAME),
     NEIGHBOURHOOD_NAME = str_to_title(NEIGHBOURHOOD_NAME),
     CIVIC_ADDRESS = paste0(CIVIC_NUMBER, " ", str_to_title(STD_STREET)),
-
+    
     HEIGHT_RANGE = factor(
-      str_replace_all(HEIGHT_RANGE, " ", ""),
+      str_replace_all(HEIGHT_RANGE, " ", ""),  # Remove spaces
       levels = c(
         "0'-10'", "10'-20'", "20'-30'", "30'-40'", 
         "40'-50'", "50'-60'", "60'-70'", "70'-80'", 
         "80'-90'", "90'-100'", ">100'"
-      ),
+      ), 
       ordered = TRUE
-    ),
-
-    # Parse lat/lon directly from geo_point_2d
-    LATITUDE = as.numeric(str_split_fixed(geo_point_2d, ",\\s*", 2)[, 1]),
-    LONGITUDE = as.numeric(str_split_fixed(geo_point_2d, ",\\s*", 2)[, 2])
-  ) |> 
-  dplyr::select(-geo_point_2d) # Don't need this anymore
+    )
+  )
 
 ui <- fluidPage(
   # Browser title
@@ -270,23 +246,23 @@ ui <- fluidPage(
     )
   ),
 
-  # # Heatmap / bar chart row
-  # fluidRow(
-  #   column(5, 
-  #          div(class = "panel panel-default", 
-  #              style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-  #              h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-  #              plotlyOutput("height_distribution", height = "420px")
-  #          )
-  #   ),
-  #   column(7, 
-  #          div(class = "panel panel-default", 
-  #              style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-  #              h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-  #              plotlyOutput("heatmap", height = "420px")
-  #          )
-  #   )
-  # ),
+  # Heatmap / bar chart row
+  fluidRow(
+    column(5, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("height_distribution", height = "420px")
+           )
+    ),
+    column(7, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("heatmap", height = "420px")
+           )
+    )
+  ),
 
   # Footer row
   fluidRow(
@@ -432,10 +408,10 @@ server <- function(input, output, session) {
       }
       if ("🏞️ VanDusen Botanical Garden" %in% input$interesting_trees) {
         data <- data |> filter(
-          LONGITUDE >= interesting_areas$min_lng &
-          LONGITUDE <= interesting_areas$max_lng &
-          LATITUDE >= interesting_areas$min_lat &
-          LATITUDE <= interesting_areas$max_lat
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) >= interesting_areas$min_lng &
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])) <= interesting_areas$max_lng &
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1])) >= interesting_areas$min_lat &
+          as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1])) <= interesting_areas$max_lat
         )
       }
     }
@@ -457,7 +433,7 @@ server <- function(input, output, session) {
         "<b>Address:</b> ", tree_info$CIVIC_ADDRESS, "<br>",
         "<b>Neighbourhood:</b> ", tree_info$NEIGHBOURHOOD_NAME, "<br>",
         "<b>Height Range:</b> ", tree_info$HEIGHT_RANGE, "<br>",
-        "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$LATITUDE, ",", tree_info$LONGITUDE, "' target='_blank'>View</a>",
+        "<b>Google Maps:</b> <a href='https://www.google.com/maps/search/?api=1&query=", tree_info$geo_point_2d, "' target='_blank'>View</a>",
         "</div>"
       )
     } else {
@@ -597,10 +573,14 @@ available_neighbourhoods <- reactive({
     # Reset the map zoom/pan to show all current points:
     data <- filtered_data()
     if(nrow(data) > 0) {
-      minLng <- min(data$LONGITUDE, na.rm = TRUE)
-      maxLng <- max(data$LONGITUDE, na.rm = TRUE)
-      minLat <- min(data$LATITUDE, na.rm = TRUE)
-      maxLat <- max(data$LATITUDE, na.rm = TRUE)
+      data <- data |> mutate(
+        lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+        lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+      )
+      minLng <- min(data$lng, na.rm = TRUE)
+      maxLng <- max(data$lng, na.rm = TRUE)
+      minLat <- min(data$lat, na.rm = TRUE)
+      maxLat <- max(data$lat, na.rm = TRUE)
       
       leafletProxy("tree_map", data = data) |>
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
@@ -688,8 +668,11 @@ available_neighbourhoods <- reactive({
       filter(TREE_ID == selected_tree()) %>% 
       slice(1)
     
-    lat <- tree_info$LATITUDE
-    lon <- tree_info$LONGITUDE
+    # Extract coordinates from the 'geo_point_2d' field (assumed format "lat, lon")
+    coords <- strsplit(tree_info$geo_point_2d, ",\\s*")[[1]]
+    if (length(coords) < 2) return()
+    lat <- as.numeric(coords[1])
+    lon <- as.numeric(coords[2])
     
     # Send a custom message to update Street View
     session$sendCustomMessage("updateStreetView", list(lat = lat, lon = lon))
@@ -701,111 +684,131 @@ available_neighbourhoods <- reactive({
     }
   })
 
-# Dynamic filter updates
-observe({
-  data <- filtered_data()
+  # Dynamic filter updates
+  observe({
+    data <- filtered_data()
 
-  if (nrow(data) > 1) {
-    coords <- data
-    coordinates(coords) <- ~LONGITUDE+LATITUDE
-    proj4string(coords) <- CRS("+proj=longlat +datum=WGS84")
+    if (nrow(data) > 0) {
+      # Extract coordinates
+      coords <- as.data.frame(do.call(rbind, strsplit(data$geo_point_2d, ", ")))
+      names(coords) <- c("lat", "lng")
+      coords <- mutate(coords, lat = as.numeric(lat), lng = as.numeric(lng)) |> drop_na(lat, lng)
 
+      if (nrow(coords) == 0) return()  # Exit if no valid coordinates
 
-    grid_size <- ifelse(nrow(coords) > 10000, 50, 100)
+      # Convert to spatial points
+      coordinates(coords) <- ~lng+lat
+      proj4string(coords) <- CRS("+proj=longlat +datum=WGS84")
 
-    grid <- expand.grid(
-      lng = seq(min(data$LONGITUDE, na.rm = TRUE), max(data$LONGITUDE, na.rm = TRUE), length.out = grid_size),
-      lat = seq(min(data$LATITUDE, na.rm = TRUE), max(data$LATITUDE, na.rm = TRUE), length.out = grid_size)
-    )
-    coordinates(grid) <- ~lng+lat
-    proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
+      if (is.null(coords) || nrow(coords) == 0 || !("lng" %in% names(coords)) || !("lat" %in% names(coords)) ||
+          anyNA(coords$lng) || anyNA(coords$lat)) {
+        print("No valid tree coordinates available. Skipping kriging.")
+        return()  # Exit observer safely
+      }
 
-    # Compute Tree Density
-    density_counts <- as.data.frame(table(cut(data$LONGITUDE, 50), cut(data$LATITUDE, 50)))
-    names(density_counts) <- c("lng", "lat", "tree_density")
+      grid_size <- ifelse(nrow(coords) > 10000, 50, 100)  # Ensure it's always numeric
 
-    grid_df <- as.data.frame(grid)
-    density_counts <- merge(grid_df, density_counts,
-                            by = c("lng", "lat"), all.x = TRUE)
-    density_counts$tree_density[is.na(density_counts$tree_density)] <- 0
+      grid <- expand.grid(
+        lng = seq(min(coords$lng, na.rm = TRUE), max(coords$lng, na.rm = TRUE), length.out = grid_size),  
+        lat = seq(min(coords$lat, na.rm = TRUE), max(coords$lat, na.rm = TRUE), length.out = grid_size)
+      )
+      coordinates(grid) <- ~lng+lat
+      proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
 
-    coordinates(density_counts) <- ~lng+lat
-    proj4string(density_counts) <- CRS("+proj=longlat +datum=WGS84")
+      # Compute Tree Density (Number of Trees per Grid Cell)
+      density_counts <- as.data.frame(table(cut(coords$lng, 50), cut(coords$lat, 50)))
+      names(density_counts) <- c("lng_bin", "lat_bin", "tree_density")
 
-    print("Starting kriging...")
-    kriging_model <- gstat::gstat(
-      formula = tree_density ~ 1, locations = density_counts, nmax = 10, set = list(idp = 2)
-    )
-    print("Kriging model created. Running prediction...")
-    flush.console()
+      # Merge Density with Grid
+      grid_df <- as.data.frame(grid)
+      density_counts <- merge(grid_df, density_counts, by.x = c("lng", "lat"), by.y = c("lng_bin", "lat_bin"), all.x = TRUE)
+      density_counts$tree_density[is.na(density_counts$tree_density)] <- 0  # Fill NAs with 0
 
-    interpolated <- predict(kriging_model, grid)
+      # Convert to Spatial Data
+      coordinates(density_counts) <- ~lng+lat
+      proj4string(density_counts) <- CRS("+proj=longlat +datum=WGS84")
 
-    # Convert to raster
-    rast <- rasterFromXYZ(as.data.frame(interpolated)[, c("lng", "lat", "var1.pred")])
-    crs(rast) <- CRS("+proj=longlat +datum=WGS84")
+      # Kriging Interpolation for Tree Density
+      print("Starting kriging...")  # Debugging statement
 
-    max_val <- max(interpolated$var1.pred, na.rm = TRUE)
-    min_val <- min(interpolated$var1.pred, na.rm = TRUE)
+      kriging_model <- gstat::gstat(
+        formula = tree_density ~ 1, locations = density_counts, nmax = 10, set = list(idp = 2)
+      )
 
-    if (max_val != min_val) {
-      interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
- 
-      pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")
- 
+      print("Kriging model created. Running prediction...")  # Debugging statement
+      flush.console()  # Forces print output
+
+      interpolated <- predict(kriging_model, grid)
+      
+      # Convert to raster for heatmap rendering
+      if (is.na(crs(rast))) {
+        crs(rast) <- CRS("+proj=longlat +datum=WGS84")  # Set projection explicitly
+      } else if (crs(rast)@projargs != "+proj=longlat +datum=WGS84") {
+        rast <- projectRaster(rast, crs = CRS("+proj=longlat +datum=WGS84"))  # Reproject if incorrect CRS
+      }
+
+      max_val <- max(interpolated$var1.pred, na.rm = TRUE)
+      min_val <- min(interpolated$var1.pred, na.rm = TRUE)
+
+      if (max_val == min_val) {  
+        interpolated$var1.pred <- 0  # Set to zero if no variation  
+      } else {
+        interpolated$var1.pred <- (interpolated$var1.pred - min_val) / (max_val - min_val)
+      }
+
+      pal <- colorNumeric("YlOrRd", domain = c(0, 1), na.color = "transparent")  # Normalize domain
+
+      # Update Leaflet map with Heatmap
       leafletProxy("tree_map") |>
         clearHeatmap() |>  
         addRasterImage(rast, colors = pal, opacity = 0.7) |>
-        addLegend(pal = pal, values = interpolated$var1.pred, title = "Tree Density")
-    } else {
-      leafletProxy("tree_map") |> clearHeatmap()
+        addLegend(values = interpolated$var1.pred, title = "Tree Density")
     }
-  }
-})
+  })
 
   # Heatmap of Tree Count x Neighbourhood
-  # output$heatmap <- renderPlotly({
-  #   data <- filtered_data()
+  output$heatmap <- renderPlotly({
+    data <- filtered_data()
   
-  #   heatmap_data <- data |>
-  #     count(NEIGHBOURHOOD_NAME, HEIGHT_RANGE)
+    heatmap_data <- data |>
+      count(NEIGHBOURHOOD_NAME, HEIGHT_RANGE)
   
-  #   # heatmap with formatted tooltips
-  #   plot <- ggplot(heatmap_data, aes(x = HEIGHT_RANGE, y = NEIGHBOURHOOD_NAME, fill = n, 
-  #                                    text = paste0("<b>Neighbourhood</b>: ", NEIGHBOURHOOD_NAME, "<br>",
-  #                                                  "<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
-  #                                                  "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
-  #     geom_tile() +
-  #     scale_fill_gradient(low = "white", high = "blue") +
-  #     labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
-  #     theme_minimal() +
-  #     scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
+    # heatmap with formatted tooltips
+    plot <- ggplot(heatmap_data, aes(x = HEIGHT_RANGE, y = NEIGHBOURHOOD_NAME, fill = n, 
+                                     text = paste0("<b>Neighbourhood</b>: ", NEIGHBOURHOOD_NAME, "<br>",
+                                                   "<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
+                                                   "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
+      geom_tile() +
+      scale_fill_gradient(low = "white", high = "blue") +
+      labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
+      theme_minimal() +
+      scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
   
-  #   ggplotly(plot, tooltip = "text")  # tooltips
-  # })
+    ggplotly(plot, tooltip = "text")  # tooltips
+  })
 
   # Tree Height Distribution (All Neighbourhoods)
-  # output$height_distribution <- renderPlotly({
-  #   data <- filtered_data() |>
-  #     count(HEIGHT_RANGE)  # Compute counts beforehand
+  output$height_distribution <- renderPlotly({
+    data <- filtered_data() |>
+      count(HEIGHT_RANGE)  # Compute counts beforehand
   
-  #   plot <- ggplot(data, aes(x = HEIGHT_RANGE, y = n, 
-  #                            text = paste0("<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
-  #                                          "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
-  #     geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
-  #     labs(x = "Height Range", y = "Tree Count") +
-  #     theme_minimal()
+    plot <- ggplot(data, aes(x = HEIGHT_RANGE, y = n, 
+                             text = paste0("<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
+                                           "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
+      geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
+      labs(x = "Height Range", y = "Tree Count") +
+      theme_minimal()
   
-  #   ggplotly(plot, tooltip = "text")  # tooltips
-  # })
+    ggplotly(plot, tooltip = "text")  # tooltips
+  })
 
   output$all_trees_table <- renderDT({
     data <- filtered_data() |>
-      dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, LATITUDE, LONGITUDE) |>
+      dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, geo_point_2d) |>
       mutate(
         `Google Maps Link` = paste0(
           "<a href='https://www.google.com/maps/search/?api=1&query=",
-          LATITUDE, ",", LONGITUDE, "' target='_blank'>View</a>"
+          geo_point_2d, "' target='_blank'>View</a>"
         ),
         # Capitalize first word, lowercase second word (otherwise link doesn't work)
         `Binomial_Link` = paste0(
@@ -818,7 +821,7 @@ observe({
           "' target='_blank'>", Binomial_Name, "</a>"
         )
       ) |>
-      dplyr::select(-LATITUDE, -LONGITUDE)  
+      dplyr::select(-geo_point_2d)  
   
     datatable(data |> dplyr::select(TREE_ID, `Binomial_Link`, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, `Google Maps Link`),  
               escape = FALSE,
@@ -927,13 +930,18 @@ observe({
   
   data <- filtered_data()
   print(paste("Filtered Data Rows:", nrow(data)))  # Debug output
+
+  data <- data |> mutate(
+    lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+    lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+  )
   
   if(nrow(data) > 0) {
     # Calculate bounds from the filtered data
-    minLng <- min(data$LONGITUDE, na.rm = TRUE)
-    maxLng <- max(data$LONGITUDE, na.rm = TRUE)
-    minLat <- min(data$LATITUDE, na.rm = TRUE)
-    maxLat <- max(data$LATITUDE, na.rm = TRUE)
+    minLng <- min(data$lng, na.rm = TRUE)
+    maxLng <- max(data$lng, na.rm = TRUE)
+    minLat <- min(data$lat, na.rm = TRUE)
+    maxLat <- max(data$lat, na.rm = TRUE)
 
     icon_create_string <- "function(cluster) {
       var maxCount = 45000;
@@ -965,22 +973,22 @@ observe({
         clearMarkers() |>
         clearMarkerClusters() |>
         addMarkers(
-          lng = ~LONGITUDE,
-          lat = ~LATITUDE,
+          lng = ~lng,
+          lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
             disableClusteringAtZoom = 18,
             iconCreateFunction = JS(icon_create_string)
           )
         ) |>
-        setView(lng = data$LONGITUDE[[1]], lat = data$LATITUDE[[1]], zoom = 15)
+        setView(lng = data$lng, lat = data$lat, zoom = 15)
     } else {
       leafletProxy("tree_map", data = data) |>
         clearMarkers() |>
         clearMarkerClusters() |>
         addMarkers(
-          lng = ~LONGITUDE,
-          lat = ~LATITUDE,
+          lng = ~lng,
+          lat = ~lat,
           layerId = ~TREE_ID,
           clusterOptions = markerClusterOptions(
             disableClusteringAtZoom = 18,
@@ -1014,10 +1022,14 @@ observe({
   observeEvent(input$reset_zoom, {
     data <- filtered_data()
     if(nrow(data) > 0) {
-      minLng <- min(data$LONGITUDE)
-      maxLng <- max(data$LONGITUDE)
-      minLat <- min(data$LATITUDE)
-      maxLat <- max(data$LATITUDE)
+      data <- data |> mutate(
+        lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
+        lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
+      )
+      minLng <- min(data$lng, na.rm = TRUE)
+      maxLng <- max(data$lng, na.rm = TRUE)
+      minLat <- min(data$lat, na.rm = TRUE)
+      maxLat <- max(data$lat, na.rm = TRUE)
       
       leafletProxy("tree_map", data = data) |>
         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
