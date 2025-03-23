@@ -41,6 +41,7 @@ street_trees <- read_csv2(
     geo_point_2d
   )
 )
+
 #source("src/preprocessing.R")
 
 # Preprocessing
@@ -54,7 +55,7 @@ street_trees <- street_trees |>
       " ",
       tolower(SPECIES_NAME)
     ),
-    Binomial_Name = gsub(" x$", "", Binomial_Name),
+    Binomial_Name = gsub(" x$", "", Binomial_Name), # species ending in x and xx break wiki links
     Binomial_Name = gsub(" xx$", "", Binomial_Name),
 
     # Convert to title case
