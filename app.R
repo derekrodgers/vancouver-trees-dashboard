@@ -41,6 +41,7 @@ street_trees <- read_csv2(
     geo_point_2d
   )
 )
+
 #source("src/preprocessing.R")
 
 # Preprocessing
@@ -894,7 +895,7 @@ observe({
     selected_row <- input$all_trees_table_rows_selected
     if (!is.null(selected_row)) {
       tree_id <- filtered_data() |> distinct(TREE_ID) |> slice(selected_row) |> pull(TREE_ID)
-      show_tree_popup(tree_id)
+      show_tree_popup(tree_id, save_view = TRUE)
     }
   })
   
