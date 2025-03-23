@@ -14,7 +14,7 @@ library(gstat)      # For kriging interpolation
 library(sp)         # For spatial data structures
 library(raster)     # For rasterizing interpolation results
 library(leaflet.extras)  # For heatmap layers in Leaflet
-library(data.table)  # Load only the cols we need using data.table::fread -- it's faster than read_csv2()
+
 
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
@@ -25,7 +25,8 @@ library(data.table)  # Load only the cols we need using data.table::fread -- it'
 
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
-
+# Load only the cols we need using data.table::fread for faster reading
+library(data.table)  # Ensure data.table is loaded
 
 street_trees <- fread(
   "data/raw/street-trees.csv",
@@ -1065,18 +1066,13 @@ observe({
   observeEvent(input$reset_zoom, {
     data <- filtered_data()
     if(nrow(data) > 0) {
-      if(nrow(data) == 1) {
-        leafletProxy("tree_map", data = data) |>
-          setView(lng = data$LONGITUDE[[1]], lat = data$LATITUDE[[1]], zoom = 15)
-      } else {
-        minLng <- min(data$LONGITUDE, na.rm = TRUE)
-        maxLng <- max(data$LONGITUDE, na.rm = TRUE)
-        minLat <- min(data$LATITUDE, na.rm = TRUE)
-        maxLat <- max(data$LATITUDE, na.rm = TRUE)
-        
-        leafletProxy("tree_map", data = data) |>
-          fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
-      }
+      minLng <- min(data$LONGITUDE)
+      maxLng <- max(data$LONGITUDE)
+      minLat <- min(data$LATITUDE)
+      maxLat <- max(data$LATITUDE)
+      
+      leafletProxy("tree_map", data = data) |>
+        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
     } else {
       leafletProxy("tree_map") |>
         setView(lng = -123.1216, lat = 49.2827, zoom = 12)
