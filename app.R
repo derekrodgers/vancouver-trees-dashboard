@@ -25,22 +25,27 @@ library(leaflet.extras)  # For heatmap layers in Leaflet
 
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
-# Load only the cols we need
-street_trees <- read_csv2(
+# Load only the cols we need using data.table::fread for faster reading
+library(data.table)  # Ensure data.table is loaded
+
+street_trees <- fread(
   "data/raw/street-trees.csv",
-  col_select = c(
-    TREE_ID,
-    CIVIC_NUMBER,
-    STD_STREET,
-    GENUS_NAME,
-    SPECIES_NAME,
-    COMMON_NAME,
-    NEIGHBOURHOOD_NAME,
-    HEIGHT_RANGE,
-    DATE_PLANTED,
-    geo_point_2d
+  sep = ";",
+  select = c(
+    "TREE_ID",
+    "CIVIC_NUMBER",
+    "STD_STREET",
+    "GENUS_NAME",
+    "SPECIES_NAME",
+    "COMMON_NAME",
+    "NEIGHBOURHOOD_NAME",
+    "HEIGHT_RANGE",
+    "DATE_PLANTED",
+    "geo_point_2d"
   )
 )
+
+street_trees <- as_tibble(street_trees)
 
 #source("src/preprocessing.R")
 
