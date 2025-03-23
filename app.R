@@ -14,7 +14,7 @@ library(gstat)      # For kriging interpolation
 library(sp)         # For spatial data structures
 library(raster)     # For rasterizing interpolation results
 library(leaflet.extras)  # For heatmap layers in Leaflet
-
+library(data.table)  # Load only the cols we need using data.table::fread -- it's faster than read_csv2()
 
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
@@ -25,8 +25,7 @@ library(leaflet.extras)  # For heatmap layers in Leaflet
 
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
-# Load only the cols we need using data.table::fread for faster reading
-library(data.table)  # Ensure data.table is loaded
+
 
 street_trees <- fread(
   "data/raw/street-trees.csv",
