@@ -592,9 +592,6 @@ available_neighbourhoods <- reactive({
     if (!is.null(input$common_name) && length(input$common_name) > 0) {
       data <- data |> filter(COMMON_NAME %in% input$common_name)
     }
-    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
-      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
-    }
 
     # Preserve the original factor order from street_trees$HEIGHT_RANGE
     hr_levels <- levels(street_trees$HEIGHT_RANGE)
