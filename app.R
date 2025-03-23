@@ -28,6 +28,9 @@ google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 # Load only the cols we need using data.table::fread for faster reading
 library(data.table)  # Ensure data.table is loaded
 
+library(parallel)
+num_threads <- detectCores()
+
 street_trees <- fread(
   "data/raw/street-trees.csv",
   sep = ";",
@@ -42,7 +45,14 @@ street_trees <- fread(
     "HEIGHT_RANGE",
     "DATE_PLANTED",
     "geo_point_2d"
-  )
+  ),
+  colClasses = list(
+    integer = c("TREE_ID", "CIVIC_NUMBER"),
+    character = c("STD_STREET", "GENUS_NAME", "SPECIES_NAME", "COMMON_NAME", "NEIGHBOURHOOD_NAME", "HEIGHT_RANGE", "geo_point_2d"),
+    Date = "DATE_PLANTED"
+  ),
+  nThread = num_threads,
+  strip.white = TRUE
 )
 
 street_trees <- as_tibble(street_trees)
