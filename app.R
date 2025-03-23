@@ -25,8 +25,6 @@ library(data.table)  # Load only the cols we need using data.table::fread -- it'
 
 google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
-
-
 street_trees <- fread(
   "data/raw/street-trees.csv",
   sep = ";",

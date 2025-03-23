@@ -1,4 +1,3 @@
-# Preprocessing
 street_trees <- street_trees |> 
   drop_na(geo_point_2d) |>
   mutate(
@@ -30,4 +29,5 @@ street_trees <- street_trees |>
     # Parse lat/lon directly from geo_point_2d
     LATITUDE = as.numeric(str_split_fixed(geo_point_2d, ",\\s*", 2)[, 1]),
     LONGITUDE = as.numeric(str_split_fixed(geo_point_2d, ",\\s*", 2)[, 2])
-  )
+  ) |> 
+  dplyr::select(-geo_point_2d) # Don't need this anymore
