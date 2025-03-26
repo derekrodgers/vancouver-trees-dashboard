@@ -97,7 +97,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
                     column(2, pickerInput("interesting_trees", "🌴 Interesting Trees 🌴",
-                                          choices = c("🌸 Cherry & Plum Trees", "🏞️ VanDusen Botanical Garden"),
+                                          choices = c("🌸 Cherry & Plum Trees", "🏞️ Park Trees", "🌷 VanDusen Botanical Garden"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
@@ -367,9 +367,12 @@ server <- function(input, output, session) {
       if ("🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
         data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
       }
-  if ("🏞️ VanDusen Botanical Garden" %in% input$interesting_trees) {
-    data <- data |> filter(vandusen_botanical_gardens)
-  }
+      if ("🌷 VanDusen Botanical Garden" %in% input$interesting_trees) {
+        data <- data |> filter(vandusen_botanical_gardens)
+      }
+      if ("🏞️ Park Trees" %in% input$interesting_trees) {
+        data <- data |> filter(PARK_TREE)
+      }
     }
     return(data)
   }
@@ -742,11 +745,6 @@ observe({
   if (restoring_view()) return()
   
   data <- filtered_data()
-
-  # data <- data |> mutate(
-  #   lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
-  #   lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
-  # )
   
   if(nrow(data) > 0) {
     # Calculate bounds from the filtered data

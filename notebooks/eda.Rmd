@@ -12,16 +12,85 @@ library(fst)
 library(naniar)
 
 # Read only the columns we use
-street_trees <- read_csv2(
-  "../data/raw/street-trees.csv",
-  col_select = c(
-    TREE_ID, CIVIC_NUMBER, STD_STREET, GENUS_NAME, SPECIES_NAME,
-    COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, geo_point_2d
+street_trees <- read_csv2("../data/raw/street-trees.csv")
+```
+In the latest update (as of 2025 March 25) some are missing neighbourhoods!
+
+```{r}
+# Count and percentage of missing NEIGHBOURHOOD_NAME
+street_trees |> 
+  summarise(
+    missing_neighbourhood = sum(is.na(NEIGHBOURHOOD_NAME) | NEIGHBOURHOOD_NAME == ""),
+    total = n(),
+    percent_missing = round(100 * missing_neighbourhood / total, 2)
   )
-)
+
+# Show a few examples
+street_trees |> 
+  filter(is.na(NEIGHBOURHOOD_NAME) | NEIGHBOURHOOD_NAME == "")
+  head(50)
+```
+It really seems like all of these trees with missing have = `PARK`. Let's confirm.
+
+```{r}
+# TRUE if all missing NEIGHBOURHOOD_NAME values have STREET_SIDE_NAME == "PARK"
+all_missing_neigh_are_parks <- street_trees |>
+  filter(is.na(NEIGHBOURHOOD_NAME) | NEIGHBOURHOOD_NAME == "") |>
+  summarise(all_parks = all(STREET_SIDE_NAME == "PARK")) |>
+  pull(all_parks)
+
+all_missing_neigh_are_parks
 ```
 
-Lat / lon missingness:
+Nope. Let's also check whether all the park trees have missing neighbourhoods:
+
+```{r}
+# TRUE if all park trees are missing neighbourhood names
+all_parks_missing_neigh <- street_trees |>
+  filter(STREET_SIDE_NAME == "PARK") |>
+  summarise(all_missing = all(is.na(NEIGHBOURHOOD_NAME) | NEIGHBOURHOOD_NAME == "")) |>
+  pull(all_missing)
+
+all_parks_missing_neigh
+```
+
+Then, let's fill the missing neighbourhood trees to explicitly be "[Missing Neighbourhood]":
+
+```{r}
+street_trees <- street_trees |>
+  mutate(
+    NEIGHBOURHOOD_NAME = ifelse(
+      is.na(NEIGHBOURHOOD_NAME) | trimws(NEIGHBOURHOOD_NAME) == "",
+      "[Missing Neighbourhood]",
+      NEIGHBOURHOOD_NAME
+    )
+  )
+```
+
+Let's make a new column for park trees because those may be interesting:
+
+```{r}
+street_trees <- street_trees |>
+  mutate(
+    PARK_TREE = STREET_SIDE_NAME == "PARK"
+  )
+```
+
+Filter down to only the columns we need from now on:
+
+```{r}
+street_trees <- street_trees |> select(TREE_ID, CIVIC_NUMBER, STD_STREET, GENUS_NAME, SPECIES_NAME,
+    COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, geo_point_2d, PARK_TREE)
+```
+
+Let's examine:
+
+```{r}
+head(street_trees, 50)
+street_trees |> filter(PARK_TREE == TRUE) |>  head(50)
+```
+
+Any lat / lon missingness?
 
 ```{r}
 # Parse geo_point_2d into lat/lon
@@ -50,7 +119,6 @@ street_trees_missing_coords <- street_trees |>
 street_trees_missing_coords |> 
   head(50)
 ```
-
 Looks like in the newest update to their dataset, they've fixed the missing lat/lon values. So we don't need this, at least in this release:
 
 ```{r}
@@ -114,6 +182,13 @@ What does it look like?
 head(street_trees, 10)
 tail(street_trees, 10)
 ```
+Let's get rid of additional columns we don't need
+
+```{r}
+street_trees <- street_trees |> select(-CIVIC_NUMBER, -STD_STREET, -GENUS_NAME, -SPECIES_NAME)
+head(street_trees)
+```
+
 Let's look at some VanDusen trees:
 
 ```{r}
