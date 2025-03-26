@@ -1,0 +1,134 @@
+---
+title: "EDA: Street Trees"
+format: html
+editor: visual
+---
+
+Read in only the columns we need:
+
+```{r}
+library(tidyverse)
+library(fst)
+library(naniar)
+
+# Read only the columns we use
+street_trees <- read_csv2(
+  "../data/raw/street-trees.csv",
+  col_select = c(
+    TREE_ID, CIVIC_NUMBER, STD_STREET, GENUS_NAME, SPECIES_NAME,
+    COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, geo_point_2d
+  )
+)
+```
+
+Lat / lon missingness:
+
+```{r}
+# Parse geo_point_2d into lat/lon
+street_trees <- street_trees |>
+  separate(geo_point_2d, into = c("LATITUDE", "LONGITUDE"), sep = ",\\s*", convert = TRUE)
+
+# Check for missing lat/lon BEFORE filtering
+street_trees |> 
+  select(LATITUDE, LONGITUDE) |> 
+  summarise(
+    missing_lat = sum(is.na(LATITUDE)),
+    missing_lon = sum(is.na(LONGITUDE)),
+    total_missing_either = sum(is.na(LATITUDE) | is.na(LONGITUDE)),
+    total_rows = n()
+  )
+
+# Visualize missingness
+street_trees |> 
+  select(LATITUDE, LONGITUDE) |>
+  gg_miss_var(show_pct = TRUE)
+
+# View sample rows missing either lat or lon
+street_trees_missing_coords <- street_trees |> 
+  filter(is.na(LATITUDE) | is.na(LONGITUDE))
+
+street_trees_missing_coords |> 
+  head(50)
+```
+
+Looks like in the newest update to their dataset, they've fixed the missing lat/lon values. So we don't need this, at least in this release:
+
+```{r}
+# Drop rows with missing lat/lon
+# street_trees <- street_trees |> 
+#   filter(!is.na(LATITUDE) & !is.na(LONGITUDE))
+```
+
+Let's do our usual preprocessing steps to clean up the data. We will also add a pre-computed bool column for the trees in VanDusen Botanical Garden so we don't have to do an expensive filtering step every time the user selects that option in the dropdown.
+
+```{r}
+street_trees <- street_trees |>
+  mutate(
+    # Construct Binomial_Name: capitalize genus and make species lowercase, then remove any trailing " x"
+    Binomial_Name = paste0(
+      toupper(substr(GENUS_NAME, 1, 1)),
+      tolower(substr(GENUS_NAME, 2, nchar(GENUS_NAME))),
+      " ",
+      tolower(SPECIES_NAME)
+    ),
+    Binomial_Name = gsub(" x$", "", Binomial_Name),
+    Binomial_Name = gsub(" xx$", "", Binomial_Name),
+    
+    # Convert to title case
+    COMMON_NAME = str_to_title(COMMON_NAME),
+    NEIGHBOURHOOD_NAME = str_to_title(NEIGHBOURHOOD_NAME),
+    CIVIC_ADDRESS = paste0(CIVIC_NUMBER, " ", str_to_title(STD_STREET)),
+    
+    HEIGHT_RANGE = factor(
+      case_when(
+        HEIGHT_RANGE == "10-20" ~ "10'-20'",
+        HEIGHT_RANGE == "20-30" ~ "20'-30'",
+        HEIGHT_RANGE == "30-40" ~ "30'-40'",
+        HEIGHT_RANGE == "40-50" ~ "40'-50'",
+        HEIGHT_RANGE == "50-60" ~ "50'-60'",
+        HEIGHT_RANGE == "60-70" ~ "60'-70'",
+        HEIGHT_RANGE == "70-80" ~ "70'-80'",
+        HEIGHT_RANGE == "80-90" ~ "80'-90'",
+        HEIGHT_RANGE == ">90"   ~ "90'-100'",
+        is.na(HEIGHT_RANGE)     ~ NA_character_,
+        TRUE                    ~ "Other"
+      ),
+      levels = c(
+        "0'-10'", "10'-20'", "20'-30'", "30'-40'", 
+        "40'-50'", "50'-60'", "60'-70'", "70'-80'", 
+        "80'-90'", "90'-100'", ">100'"
+      ),
+      ordered = TRUE
+    ),
+    
+    vandusen_botanical_gardens = LONGITUDE >= -123.138048600311 &
+                             LONGITUDE <= -123.12791305292048 &
+                             LATITUDE  >= 49.23785042226124 &
+                             LATITUDE  <= 49.241214933282045
+  )
+```
+
+What does it look like?
+
+```{r}
+head(street_trees, 10)
+tail(street_trees, 10)
+```
+Let's look at some VanDusen trees:
+
+```{r}
+street_trees |> filter(vandusen_botanical_gardens) |> head()
+```
+
+Let's save it out to a binary file so it's fast to read in when the app runs. We don't want to compress it, because this dataset isn't very big and it'll slow down read operations a bit.
+
+```{r}
+# Save to fst
+write_fst(street_trees, "../data/processed/street-trees.fst", compress = 0)
+```
+
+Let's test reading it back in:
+
+```{r}
+read_fst("../data/processed/street-trees.fst") |> head()
+```
