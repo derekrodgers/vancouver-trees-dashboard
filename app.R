@@ -463,18 +463,7 @@ available_neighbourhoods <- reactive({
 
   # Compute available Binomial Name values based on other filters
   available_binomial_name <- reactive({
-    data <- street_trees
-    data <- apply_interesting_tree_filters(data)
-    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
-      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
-    }
-    if (!is.null(input$height_range) && length(input$height_range) > 0) {
-      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
-    }
-    if (!is.null(input$common_name) && length(input$common_name) > 0) {
-      data <- data |> filter(COMMON_NAME %in% input$common_name)
-    }
-    sort(unique(data$Binomial_Name))
+    sort(unique(base_filtered_data()$Binomial_Name))
   })
 
   # Update the Binomial Name picker
@@ -486,18 +475,7 @@ available_neighbourhoods <- reactive({
 
   # Compute available Common Name values based on other filters
   available_common_name <- reactive({
-    data <- street_trees
-    data <- apply_interesting_tree_filters(data)
-    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
-      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
-    }
-    if (!is.null(input$height_range) && length(input$height_range) > 0) {
-      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
-    }
-    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
-      data <- data |> filter(Binomial_Name %in% input$binomial_name)
-    }
-    sort(unique(data$COMMON_NAME))
+    sort(unique(base_filtered_data()$COMMON_NAME))
   })
 
   # Update the Common Name picker
@@ -555,33 +533,32 @@ available_neighbourhoods <- reactive({
   })
 
   # Reactive Data Filtering
-  filtered_data <- reactive({
+  base_filtered_data <- reactive({
     data <- street_trees
     data <- apply_interesting_tree_filters(data)
-  
-    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
+
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0)
       data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
-    }
-    if (!is.null(input$height_range) && length(input$height_range) > 0) {
+    if (!is.null(input$height_range) && length(input$height_range) > 0)
       data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
-    }
-    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0)
       data <- data |> filter(Binomial_Name %in% input$binomial_name)
-    }
-    if (!is.null(input$common_name) && length(input$common_name) > 0) {
+    if (!is.null(input$common_name) && length(input$common_name) > 0)
       data <- data |> filter(COMMON_NAME %in% input$common_name)
-    }
-    
-    # Apply species selection from table click
-    if (!is.null(selected_species())) {
+
+    return(data)
+  })
+
+  # Subset reactive for selected_species and selected_tree
+  filtered_data <- reactive({
+    data <- base_filtered_data()
+
+    if (!is.null(selected_species()))
       data <- data |> filter(Binomial_Name == selected_species())
-    }
-  
-    # Apply tree selection from table click
-    if (!is.null(selected_tree())) {
+
+    if (!is.null(selected_tree()))
       data <- data |> filter(TREE_ID == selected_tree())
-    }
-  
+
     return(data)
   })
 
