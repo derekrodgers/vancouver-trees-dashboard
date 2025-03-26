@@ -448,6 +448,7 @@ server <- function(input, output, session) {
   # Compute available Height Range values based on other filters
   available_height_range <- reactive({
     data <- street_trees
+    data <- apply_interesting_tree_filters(data)
     
     # Apply the other filters
     if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
