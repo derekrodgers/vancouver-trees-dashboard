@@ -25,7 +25,7 @@ google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
 ui <- fluidPage(
   # Browser title
-  title = "Vancouver Street Trees Dashboard",
+  title = "Vancouver Trees Dashboard",
   
   tags$head(
     tags$style(HTML("
@@ -63,7 +63,7 @@ ui <- fluidPage(
                     style = "display: flex; align-items: center;",
  
                     h2(
-                      "Vancouver Street Trees Dashboard", 
+                      "Vancouver Trees Dashboard", 
                       style = "margin: 0; text-align: left; line-height: 1.2; margin-right: 10px;"
                     ),
  
@@ -215,22 +215,22 @@ ui <- fluidPage(
   ),
 
   # Heatmap / bar chart row
-  fluidRow(
-    column(5, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("height_distribution", height = "420px")
-           )
-    ),
-    column(7, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "420px")
-           )
-    )
-  ),
+  # fluidRow(
+  #   column(5, 
+  #          div(class = "panel panel-default", 
+  #              style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+  #              h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
+  #              plotlyOutput("height_distribution", height = "420px")
+  #          )
+  #   ),
+  #   column(7, 
+  #          div(class = "panel panel-default", 
+  #              style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+  #              h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+  #              plotlyOutput("heatmap", height = "420px")
+  #          )
+  #   )
+  # ),
 
   # Footer row
   fluidRow(
@@ -634,41 +634,41 @@ server <- function(input, output, session) {
     }
   })
 
-  # Heatmap of Tree Count x Neighbourhood
-  output$heatmap <- renderPlotly({
-    data <- filtered_data()
+  # # Heatmap of Tree Count x Neighbourhood
+  # output$heatmap <- renderPlotly({
+  #   data <- filtered_data()
   
-    heatmap_data <- data |>
-      count(NEIGHBOURHOOD_NAME, HEIGHT_RANGE)
+  #   heatmap_data <- data |>
+  #     count(NEIGHBOURHOOD_NAME, HEIGHT_RANGE)
   
-    # heatmap with formatted tooltips
-    plot <- ggplot(heatmap_data, aes(x = HEIGHT_RANGE, y = NEIGHBOURHOOD_NAME, fill = n, 
-                                     text = paste0("<b>Neighbourhood</b>: ", NEIGHBOURHOOD_NAME, "<br>",
-                                                   "<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
-                                                   "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
-      geom_tile() +
-      scale_fill_gradient(low = "white", high = "blue") +
-      labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
-      theme_minimal() +
-      scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
+  #   # heatmap with formatted tooltips
+  #   plot <- ggplot(heatmap_data, aes(x = HEIGHT_RANGE, y = NEIGHBOURHOOD_NAME, fill = n, 
+  #                                    text = paste0("<b>Neighbourhood</b>: ", NEIGHBOURHOOD_NAME, "<br>",
+  #                                                  "<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
+  #                                                  "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
+  #     geom_tile() +
+  #     scale_fill_gradient(low = "white", high = "blue") +
+  #     labs(x = "Height Range", y = "Neighbourhood", fill = "Tree Count") +
+  #     theme_minimal() +
+  #     scale_y_discrete(limits = sort(unique(data$NEIGHBOURHOOD_NAME), decreasing = TRUE))
   
-    ggplotly(plot, tooltip = "text")  # tooltips
-  })
+  #   ggplotly(plot, tooltip = "text")  # tooltips
+  # })
 
-  # Tree Height Distribution (All Neighbourhoods)
-  output$height_distribution <- renderPlotly({
-    data <- filtered_data() |>
-      count(HEIGHT_RANGE)  # Compute counts beforehand
+  # # Tree Height Distribution (All Neighbourhoods)
+  # output$height_distribution <- renderPlotly({
+  #   data <- filtered_data() |>
+  #     count(HEIGHT_RANGE)  # Compute counts beforehand
   
-    plot <- ggplot(data, aes(x = HEIGHT_RANGE, y = n, 
-                             text = paste0("<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
-                                           "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
-      geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
-      labs(x = "Height Range", y = "Tree Count") +
-      theme_minimal()
+  #   plot <- ggplot(data, aes(x = HEIGHT_RANGE, y = n, 
+  #                            text = paste0("<b>Height Range</b>: ", HEIGHT_RANGE, "<br>",
+  #                                          "<b>Tree Count</b>: ", format(n, big.mark = ",")))) +
+  #     geom_bar(stat = "identity", fill = "seagreen") +  # Use precomputed counts
+  #     labs(x = "Height Range", y = "Tree Count") +
+  #     theme_minimal()
   
-    ggplotly(plot, tooltip = "text")  # tooltips
-  })
+  #   ggplotly(plot, tooltip = "text")  # tooltips
+  # })
 
   output$all_trees_table <- renderDT({
     data <- filtered_data() |>
