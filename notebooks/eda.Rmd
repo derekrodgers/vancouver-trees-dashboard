@@ -14,6 +14,7 @@ library(naniar)
 # Read only the columns we use
 street_trees <- read_csv2("../data/raw/street-trees.csv")
 ```
+
 In the latest update (as of 2025 March 25) some are missing neighbourhoods!
 
 ```{r}
@@ -30,6 +31,7 @@ street_trees |>
   filter(is.na(NEIGHBOURHOOD_NAME) | NEIGHBOURHOOD_NAME == "")
   head(50)
 ```
+
 It really seems like all of these trees with missing have = `PARK`. Let's confirm.
 
 ```{r}
@@ -54,7 +56,7 @@ all_parks_missing_neigh <- street_trees |>
 all_parks_missing_neigh
 ```
 
-Then, let's fill the missing neighbourhood trees to explicitly be "[Missing Neighbourhood]":
+Then, let's fill the missing neighbourhood trees to explicitly be "\[Missing Neighbourhood\]":
 
 ```{r}
 street_trees <- street_trees |>
@@ -119,6 +121,7 @@ street_trees_missing_coords <- street_trees |>
 street_trees_missing_coords |> 
   head(50)
 ```
+
 Looks like in the newest update to their dataset, they've fixed the missing lat/lon values. So we don't need this, at least in this release:
 
 ```{r}
@@ -157,14 +160,14 @@ street_trees <- street_trees |>
         HEIGHT_RANGE == "60-70" ~ "60'-70'",
         HEIGHT_RANGE == "70-80" ~ "70'-80'",
         HEIGHT_RANGE == "80-90" ~ "80'-90'",
-        HEIGHT_RANGE == ">90"   ~ "90'-100'",
+        HEIGHT_RANGE == ">90"   ~ ">90'",
         is.na(HEIGHT_RANGE)     ~ NA_character_,
         TRUE                    ~ "Other"
       ),
       levels = c(
-        "0'-10'", "10'-20'", "20'-30'", "30'-40'", 
+        "10'-20'", "20'-30'", "30'-40'", 
         "40'-50'", "50'-60'", "60'-70'", "70'-80'", 
-        "80'-90'", "90'-100'", ">100'"
+        "80'-90'", ">90'"
       ),
       ordered = TRUE
     ),
@@ -182,6 +185,7 @@ What does it look like?
 head(street_trees, 10)
 tail(street_trees, 10)
 ```
+
 Let's get rid of additional columns we don't need
 
 ```{r}

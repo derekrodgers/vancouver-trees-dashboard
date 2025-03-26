@@ -422,7 +422,21 @@ server <- function(input, output, session) {
   }
 
   available_neighbourhoods <- reactive({
-    sort(unique(base_filtered_data()$NEIGHBOURHOOD_NAME))
+    data <- street_trees
+    data <- apply_interesting_tree_filters(data)
+    
+    # Apply other filters (if any) that affect what neighbourhoods are available
+    if (!is.null(input$height_range) && length(input$height_range) > 0) {
+      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+    }
+    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+      data <- data |> filter(Binomial_Name %in% input$binomial_name)
+    }
+    if (!is.null(input$common_name) && length(input$common_name) > 0) {
+      data <- data |> filter(COMMON_NAME %in% input$common_name)
+    }
+    
+    sort(unique(data$NEIGHBOURHOOD_NAME))
   })
 
   observe({
@@ -433,8 +447,22 @@ server <- function(input, output, session) {
 
   # Compute available Height Range values based on other filters
   available_height_range <- reactive({
-    data <- base_filtered_data()
+    data <- street_trees
+    
+    # Apply the other filters
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
+      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
+    }
+    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+      data <- data |> filter(Binomial_Name %in% input$binomial_name)
+    }
+    if (!is.null(input$common_name) && length(input$common_name) > 0) {
+      data <- data |> filter(COMMON_NAME %in% input$common_name)
+    }
+
+    # Preserve the original factor order from street_trees$HEIGHT_RANGE
     hr_levels <- levels(street_trees$HEIGHT_RANGE)
+    # Only keep levels actually present in the filtered data
     hr_levels[hr_levels %in% data$HEIGHT_RANGE]
   })
 
@@ -450,7 +478,18 @@ server <- function(input, output, session) {
 
   # Compute available Binomial Name values based on other filters
   available_binomial_name <- reactive({
-    sort(unique(base_filtered_data()$Binomial_Name))
+    data <- street_trees
+    data <- apply_interesting_tree_filters(data)
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
+      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
+    }
+    if (!is.null(input$height_range) && length(input$height_range) > 0) {
+      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+    }
+    if (!is.null(input$common_name) && length(input$common_name) > 0) {
+      data <- data |> filter(COMMON_NAME %in% input$common_name)
+    }
+    sort(unique(data$Binomial_Name))
   })
 
   # Update the Binomial Name picker
@@ -462,7 +501,18 @@ server <- function(input, output, session) {
 
   # Compute available Common Name values based on other filters
   available_common_name <- reactive({
-    sort(unique(base_filtered_data()$COMMON_NAME))
+    data <- street_trees
+    data <- apply_interesting_tree_filters(data)
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
+      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
+    }
+    if (!is.null(input$height_range) && length(input$height_range) > 0) {
+      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+    }
+    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
+      data <- data |> filter(Binomial_Name %in% input$binomial_name)
+    }
+    sort(unique(data$COMMON_NAME))
   })
 
   # Update the Common Name picker
