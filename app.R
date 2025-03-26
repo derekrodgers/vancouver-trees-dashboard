@@ -403,22 +403,23 @@ server <- function(input, output, session) {
     session$sendCustomMessage("openPopupAfterZoom", list(id = tree_id, content = content))
   }
 
-available_neighbourhoods <- reactive({
-  data <- street_trees
-  data <- apply_interesting_tree_filters(data)
-  
-  # Apply other filters (if any) that affect what neighbourhoods are available
-  if (!is.null(input$height_range) && length(input$height_range) > 0) {
-      data <- data |> filter(HEIGHT_RANGE %in% input$height_range)
+  fit_map_to_data <- function(data) {
+    if(nrow(data) > 0) {
+      leafletProxy("tree_map", data = data) |>
+        fitBounds(
+          lng1 = min(data$LONGITUDE, na.rm = TRUE),
+          lat1 = min(data$LATITUDE, na.rm = TRUE),
+          lng2 = max(data$LONGITUDE, na.rm = TRUE),
+          lat2 = max(data$LATITUDE, na.rm = TRUE)
+        )
+    } else {
+      leafletProxy("tree_map") |>
+        setView(lng = -123.1216, lat = 49.2827, zoom = 12)
     }
-    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
-      data <- data |> filter(Binomial_Name %in% input$binomial_name)
-    }
-    if (!is.null(input$common_name) && length(input$common_name) > 0) {
-      data <- data |> filter(COMMON_NAME %in% input$common_name)
-    }
-    
-    sort(unique(data$NEIGHBOURHOOD_NAME))
+  }
+
+  available_neighbourhoods <- reactive({
+    sort(unique(base_filtered_data()$NEIGHBOURHOOD_NAME))
   })
 
   observe({
@@ -429,25 +430,8 @@ available_neighbourhoods <- reactive({
 
   # Compute available Height Range values based on other filters
   available_height_range <- reactive({
-    data <- street_trees
-    
-    # Apply the other filters
-    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
-      data <- data |> filter(NEIGHBOURHOOD_NAME %in% input$neighbourhood)
-    }
-    if (!is.null(input$binomial_name) && length(input$binomial_name) > 0) {
-      data <- data |> filter(Binomial_Name %in% input$binomial_name)
-    }
-    if (!is.null(input$common_name) && length(input$common_name) > 0) {
-      data <- data |> filter(COMMON_NAME %in% input$common_name)
-    }
-    if (!is.null(input$interesting_trees) && "🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
-      data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
-    }
-
-    # Preserve the original factor order from street_trees$HEIGHT_RANGE
+    data <- base_filtered_data()
     hr_levels <- levels(street_trees$HEIGHT_RANGE)
-    # Only keep levels actually present in the filtered data
     hr_levels[hr_levels %in% data$HEIGHT_RANGE]
   })
 
@@ -506,18 +490,7 @@ available_neighbourhoods <- reactive({
     
     # Reset the map zoom/pan to show all current points:
     data <- filtered_data()
-    if(nrow(data) > 0) {
-      minLng <- min(data$LONGITUDE, na.rm = TRUE)
-      maxLng <- max(data$LONGITUDE, na.rm = TRUE)
-      minLat <- min(data$LATITUDE, na.rm = TRUE)
-      maxLat <- max(data$LATITUDE, na.rm = TRUE)
-
-      leafletProxy("tree_map", data = data) |>
-        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
-    } else {
-      leafletProxy("tree_map") |>
-        setView(lng = -123.1216, lat = 49.2827, zoom = 12)
-    }
+    fit_map_to_data(filtered_data())
   })
 
   observeEvent(input$reset_species, {
@@ -860,22 +833,7 @@ observe({
 
   observeEvent(input$reset_zoom, {
     data <- filtered_data()
-    if(nrow(data) > 0) {
-      # data <- data |> mutate(
-      #   lng = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[2])),
-      #   lat = as.numeric(sapply(strsplit(geo_point_2d, ","), function(x) x[1]))
-      # )
-      minLng <- min(data$LONGITUDE, na.rm = TRUE)
-      maxLng <- max(data$LONGITUDE, na.rm = TRUE)
-      minLat <- min(data$LATITUDE, na.rm = TRUE)
-      maxLat <- max(data$LATITUDE, na.rm = TRUE)
-      
-      leafletProxy("tree_map", data = data) |>
-        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
-    } else {
-      leafletProxy("tree_map") |>
-        setView(lng = -123.1216, lat = 49.2827, zoom = 12)
-    }
+    fit_map_to_data(filtered_data())
   })
 
 }
