@@ -567,6 +567,7 @@ server <- function(input, output, session) {
   observeEvent(input$reset_species, {
     selected_species(NULL)
     updatePickerInput(session, "binomial_name", selected = character(0))
+    updatePickerInput(session, "common_name", selected = character(0))
     proxy <- dataTableProxy('tree_table')
     selectRows(proxy, integer(0))
   })
