@@ -590,17 +590,17 @@ server <- function(input, output, session) {
   })
 
   # Render Map (Initially Empty, Will Update via Proxy)
-  output$tree_map <- renderLeaflet({
-    leaflet() |> # leaflet(options = leafletOptions(maxZoom = 22)) |>
-      addTiles() |>
-      setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
-      htmlwidgets::onRender("
-    function(el, x) {
-      window.treeMap = this;
-      this.addControl(new L.Control.Fullscreen());
-    }
-  ")
-  })
+  # output$tree_map <- renderLeaflet({
+  #   leaflet() |> # leaflet(options = leafletOptions(maxZoom = 22)) |>
+  #     addTiles() |>
+  #     setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
+  #     htmlwidgets::onRender("
+  #   function(el, x) {
+  #     window.treeMap = this;
+  #     this.addControl(new L.Control.Fullscreen());
+  #   }
+  # ")
+  # })
 
   # # Satellite imagery map
   # output$tree_map <- renderLeaflet({
@@ -793,81 +793,163 @@ server <- function(input, output, session) {
     paste("Total Trees:", format(num_trees, big.mark = ","))
   })
 
-observe({
-  # Skip view updates if we're in the middle of restoring the view.
-  if (restoring_view()) return()
+# observe({
+#   # Skip view updates if we're in the middle of restoring the view.
+#   if (restoring_view()) return()
   
-  data <- filtered_data()
+#   data <- filtered_data()
   
-  if(nrow(data) > 0) {
-    # Calculate bounds from the filtered data
-    minLng <- min(data$LONGITUDE, na.rm = TRUE)
-    maxLng <- max(data$LONGITUDE, na.rm = TRUE)
-    minLat <- min(data$LATITUDE, na.rm = TRUE)
-    maxLat <- max(data$LATITUDE, na.rm = TRUE)
+#   if(nrow(data) > 0) {
+#     # Calculate bounds from the filtered data
+#     minLng <- min(data$LONGITUDE, na.rm = TRUE)
+#     maxLng <- max(data$LONGITUDE, na.rm = TRUE)
+#     minLat <- min(data$LATITUDE, na.rm = TRUE)
+#     maxLat <- max(data$LATITUDE, na.rm = TRUE)
 
-    icon_create_string <- "function(cluster) {
-      var maxCount = 45000;
-      var numBuckets = 8;
-      var colors = [
-        '#90EE90', // light green
-        '#4cb04c', // green
-        '#FFFF00', // yellow
-        '#FFD700', // gold
-        '#FFA500', // orange
-        '#FF8C00', // dark orange
-        '#FF4500', // orange red
-        '#FF0000'  // red
-      ];
-      var count = cluster.getChildCount();
-      // If count is less than 1000, leave it as is; otherwise, round to the nearest thousand.
-      var countFormatted = (count < 1000) ? count : (Math.round(count / 1000)) + 'k';
-      var bucket = Math.floor(Math.pow(count / maxCount, 0.5) * numBuckets);
-      bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
-      return new L.DivIcon({
-        html: '<div style=\"background-color:' + colors[bucket] + ';\"><span style=\"color: black; font-size: 14px;\">' + countFormatted + '</span></div>',
-        className: 'marker-cluster',
-        iconSize: new L.Point(50, 50)
-      });
-    }"
+#     icon_create_string <- "function(cluster) {
+#       var maxCount = 45000;
+#       var numBuckets = 8;
+#       var colors = [
+#         '#90EE90', // light green
+#         '#4cb04c', // green
+#         '#FFFF00', // yellow
+#         '#FFD700', // gold
+#         '#FFA500', // orange
+#         '#FF8C00', // dark orange
+#         '#FF4500', // orange red
+#         '#FF0000'  // red
+#       ];
+#       var count = cluster.getChildCount();
+#       // If count is less than 1000, leave it as is; otherwise, round to the nearest thousand.
+#       var countFormatted = (count < 1000) ? count : (Math.round(count / 1000)) + 'k';
+#       var bucket = Math.floor(Math.pow(count / maxCount, 0.5) * numBuckets);
+#       bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+#       return new L.DivIcon({
+#         html: '<div style=\"background-color:' + colors[bucket] + ';\"><span style=\"color: black; font-size: 14px;\">' + countFormatted + '</span></div>',
+#         className: 'marker-cluster',
+#         iconSize: new L.Point(50, 50)
+#       });
+#     }"
 
-    if(nrow(data) == 1) {
-      leafletProxy("tree_map", data = data) |>
-        clearMarkers() |>
-        clearMarkerClusters() |>
-      addMarkers(
-          lng = ~LONGITUDE,
-          lat = ~LATITUDE,
-          layerId = ~TREE_ID,
-          clusterOptions = markerClusterOptions(
-            disableClusteringAtZoom = 18,
-            iconCreateFunction = JS(icon_create_string)
+#     if(nrow(data) == 1) {
+#       leafletProxy("tree_map", data = data) |>
+#         clearMarkers() |>
+#         clearMarkerClusters() |>
+#       addMarkers(
+#           lng = ~LONGITUDE,
+#           lat = ~LATITUDE,
+#           layerId = ~TREE_ID,
+#           clusterOptions = markerClusterOptions(
+#             disableClusteringAtZoom = 18,
+#             iconCreateFunction = JS(icon_create_string)
+#           )
+#         ) |>
+#         setView(lng = data$LONGITUDE, lat = data$LATITUDE, zoom = 15)
+#     } else {
+#       leafletProxy("tree_map", data = data) |>
+#         clearMarkers() |>
+#         clearMarkerClusters() |>
+#       addMarkers(
+#           lng = ~LONGITUDE,
+#           lat = ~LATITUDE,
+#           layerId = ~TREE_ID,
+#           clusterOptions = markerClusterOptions(
+#             disableClusteringAtZoom = 18,
+#             iconCreateFunction = JS(icon_create_string)
+#           )
+#         ) |>
+#         fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+#     }
+#   } else {
+#     leafletProxy("tree_map") |>
+#       clearMarkers() |>
+#       clearMarkerClusters() |>
+#       setView(lng = -123.1216, lat = 49.2827, zoom = 12)
+#   }
+# })
+
+  output$tree_map <- renderLeaflet({
+    data <- filtered_data()
+
+    # Base Leaflet with the fullscreen control
+    m <- leaflet() |>
+      addTiles() |>
+      htmlwidgets::onRender("
+        function(el, x) {
+          window.treeMap = this;
+          this.addControl(new L.Control.Fullscreen());
+        }
+      ")
+
+    if (nrow(data) > 0) {
+      # The same icon_create_string logic from your old observer
+      icon_create_string <- "function(cluster) {
+        var maxCount = 45000;
+        var numBuckets = 8;
+        var colors = [
+          '#90EE90',
+          '#4cb04c',
+          '#FFFF00',
+          '#FFD700',
+          '#FFA500',
+          '#FF8C00',
+          '#FF4500',
+          '#FF0000'
+        ];
+        var count = cluster.getChildCount();
+        var countFormatted = (count < 1000) ? count : (Math.round(count / 1000)) + 'k';
+        var bucket = Math.floor(Math.pow(count / maxCount, 0.5) * numBuckets);
+        bucket = Math.max(0, Math.min(bucket, numBuckets - 1));
+        return new L.DivIcon({
+          html: '<div style=\"background-color:' + colors[bucket] + ';\"><span style=\"color: black; font-size: 14px;\">' + countFormatted + '</span></div>',
+          className: 'marker-cluster',
+          iconSize: new L.Point(50, 50)
+        });
+      }"
+
+      if (nrow(data) == 1) {
+        # Single point
+        m <- m |>
+          setView(lng = data$LONGITUDE, lat = data$LATITUDE, zoom = 15) |>
+          addMarkers(
+            lng = ~LONGITUDE,
+            lat = ~LATITUDE,
+            layerId = ~TREE_ID,
+            clusterOptions = markerClusterOptions(
+              disableClusteringAtZoom = 18,
+              iconCreateFunction = JS(icon_create_string)
+            ),
+            data = data
           )
-        ) |>
-        setView(lng = data$LONGITUDE, lat = data$LATITUDE, zoom = 15)
+      } else {
+        # Multiple points
+        m <- m |>
+          addMarkers(
+            lng = ~LONGITUDE,
+            lat = ~LATITUDE,
+            layerId = ~TREE_ID,
+            clusterOptions = markerClusterOptions(
+              disableClusteringAtZoom = 18,
+              iconCreateFunction = JS(icon_create_string)
+            ),
+            data = data
+          ) |>
+          fitBounds(
+            lng1 = min(data$LONGITUDE, na.rm = TRUE),
+            lat1 = min(data$LATITUDE, na.rm = TRUE),
+            lng2 = max(data$LONGITUDE, na.rm = TRUE),
+            lat2 = max(data$LATITUDE, na.rm = TRUE)
+          )
+      }
     } else {
-      leafletProxy("tree_map", data = data) |>
-        clearMarkers() |>
-        clearMarkerClusters() |>
-      addMarkers(
-          lng = ~LONGITUDE,
-          lat = ~LATITUDE,
-          layerId = ~TREE_ID,
-          clusterOptions = markerClusterOptions(
-            disableClusteringAtZoom = 18,
-            iconCreateFunction = JS(icon_create_string)
-          )
-        ) |>
-        fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+      # No data -> default Vancouver view
+      m <- m |>
+        setView(lng = -123.1216, lat = 49.2827, zoom = 12)
     }
-  } else {
-    leafletProxy("tree_map") |>
-      clearMarkers() |>
-      clearMarkerClusters() |>
-      setView(lng = -123.1216, lat = 49.2827, zoom = 12)
-  }
-})
-  
+
+    m
+  })
+
   observeEvent(input$tree_map_marker_click, {
     event <- input$tree_map_marker_click
     if (!is.null(event$id)) {
