@@ -175,7 +175,12 @@ street_trees <- street_trees |>
     vandusen_botanical_gardens = LONGITUDE >= -123.138048600311 &
                              LONGITUDE <= -123.12791305292048 &
                              LATITUDE  >= 49.23785042226124 &
-                             LATITUDE  <= 49.241214933282045
+                             LATITUDE  <= 49.241214933282045,
+    
+    # New Stanley Park logic:
+    stanley_park = NEIGHBOURHOOD_NAME == "[Missing Neighbourhood]" &
+                   PARK_TREE == TRUE &
+                   LATITUDE > 49.289422389857215
   )
 ```
 

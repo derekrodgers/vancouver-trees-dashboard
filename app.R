@@ -107,8 +107,8 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
-                    column(2, pickerInput("interesting_trees", "🌴 Interesting Trees 🌴",
-                                          choices = c("🌸 Cherry & Plum Trees", "🏞️ Park Trees", "🌷 VanDusen Botanical Garden"),
+                    column(2, pickerInput("interesting_trees", "⭐ Interesting Trees ⭐",
+                                          choices = c("🌳 All Park Trees", "🏞️ Stanley Park Trees", "🌸 Cherry & Plum Trees", "🌴 Palm Trees", "🌷 VanDusen Botanical Garden"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
@@ -378,11 +378,17 @@ server <- function(input, output, session) {
       if ("🌸 Cherry & Plum Trees" %in% input$interesting_trees) {
         data <- data |> filter(grepl("cherry|plum", COMMON_NAME, ignore.case = TRUE))
       }
+      if ("🌴 Palm Trees" %in% input$interesting_trees) {
+        data <- data |> filter(grepl("palm", COMMON_NAME, ignore.case = TRUE))
+      }
       if ("🌷 VanDusen Botanical Garden" %in% input$interesting_trees) {
         data <- data |> filter(vandusen_botanical_gardens)
       }
-      if ("🏞️ Park Trees" %in% input$interesting_trees) {
+      if ("🌳 All Park Trees" %in% input$interesting_trees) {
         data <- data |> filter(PARK_TREE)
+      }
+      if ("🏞️ Stanley Park Trees" %in% input$interesting_trees) {
+        data <- data |> filter(stanley_park)
       }
     }
     return(data)
