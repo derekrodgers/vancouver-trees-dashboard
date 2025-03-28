@@ -670,7 +670,8 @@ server <- function(input, output, session) {
     ggplotly(plot, tooltip = "text")  # tooltips
   })
 
-  output$all_trees_table <- renderDT({
+  output$all_trees_table <- renderDT(server = TRUE, {
+  #output$all_trees_table <- renderDT({
     data <- filtered_data() |>
       dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, LATITUDE, LONGITUDE) |>
       mutate(
@@ -705,7 +706,8 @@ server <- function(input, output, session) {
 
   # Tree species count table
   common_name_trucation_chars <- 45
-  output$tree_table <- renderDT({
+  output$tree_table <- renderDT(server = TRUE, {
+  #output$tree_table <- renderDT({
     data <- filtered_data() |>
       group_by(Binomial_Name, COMMON_NAME) |>
       summarise(Count_Common_Name = n(), .groups = "drop") |>
