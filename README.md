@@ -1,8 +1,8 @@
-# Vancouver Street Trees Dashboard
+# Vancouver Trees Dashboard
 
-The **Vancouver Street Trees Dashboard** is an interactive R Shiny app that has:
+The **Vancouver Trees Dashboard** is an interactive R Shiny app that has:
 
-- Filters for street trees by neighbourhood, height category, binomial species name, and common name.
+- Filters for public trees by neighbourhood, height category, binomial species name, and common name.
 - A live map that displays all tree locations, reactive to all filters.
 - Reactive Google Street View, allowing a visual perspective on each tree.
 - A table displaying aggreate tree counts by species.
@@ -19,7 +19,7 @@ The data used in this dashboard comes from the **City of Vancouver's Public Tree
 
 You can try the live version of the app here:
 
-🔗 **[Vancouver Street Trees Dashboard](https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/)**
+🔗 **[Vancouver Trees Dashboard](https://databyderek.shinyapps.io/vancouver-trees-dashboard/)**
 
 ## Local Installation
 
@@ -39,7 +39,7 @@ Ensure you have R (>= 4.4.1) installed, then start R in the terminal:
 R
 ```
 
-At the R console, install the `renv` package and restore from the project's `renv.lock` file to install required packages:
+At the R console, install the `renv` package, then restore from the project's `renv.lock` file to install required packages:
 
 ```r
 install.packages("renv")
@@ -54,4 +54,4 @@ At the R console, run:
 shiny::runApp("src/app.R")
 ```
 
-© 2025 Derek Rodgers. Licensed under MIT.
+© 2025 [Derek Rodgers](https://github.com/derekrodgers). Licensed under MIT.

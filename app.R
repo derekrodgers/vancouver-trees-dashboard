@@ -108,7 +108,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
                     column(2, pickerInput("interesting_trees", "⭐ Interesting Trees ⭐",
-                                          choices = c("🌳 All Park Trees", "🏞️ Stanley Park Trees", "🌸 Cherry & Plum Trees", "🌴 Palm Trees", "🌷 VanDusen Botanical Garden"),
+                                          choices = c("🌸 Cherry & Plum Trees", "🌴 Palm Trees", "🌳 All Park Trees", "🏞️ Stanley Park Trees", "🌷 VanDusen Botanical Garden"),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
@@ -255,7 +255,16 @@ ui <- fluidPage(
           # tags$p(
           #   tags$a(href = "https://github.com/derekrodgers/vancouver-trees-dashboard", "GitHub Repository")
           # ),
-        tags$p(paste("©", format(Sys.Date(), "%Y"), "Derek Rodgers. Licensed under MIT."))
+        tags$p(
+          "©",
+          format(Sys.Date(), "%Y"),
+          tags$a(
+            href = "https://github.com/derekrodgers", 
+            target = "_blank", 
+            "Derek Rodgers"
+          ),
+          "— Licensed under MIT."
+        )
       )
     )
   ),
