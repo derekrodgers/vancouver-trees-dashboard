@@ -97,7 +97,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
                                           width = "100%")),
-                    column(2, pickerInput("common_name", "Common Name",
+                    column(2, pickerInput("common_name", "Common Names",
                                           choices = sort(unique(street_trees$COMMON_NAME)),
                                           multiple = TRUE,
                                           options = list(`actions-box` = TRUE, `live-search` = TRUE),
