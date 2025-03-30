@@ -10,3 +10,4 @@ libgeos-dev
 libproj-dev
 libsqlite3-dev
 proj-bin
+libtbb-dev
