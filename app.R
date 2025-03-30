@@ -21,6 +21,7 @@ library(leaflet.extras)
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
+google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
 ui <- fluidPage(
   # Browser page title
@@ -48,7 +49,6 @@ ui <- fluidPage(
   # JavaScript
   tags$head(
     # Source Street View API key from the text file:
-    google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE)),
     tags$script(src = paste0("https://maps.googleapis.com/maps/api/js?key=", google_api_key, "&libraries=geometry")),
     
     # Ensure cursor is a link pointer when hovering over table rows:
@@ -275,35 +275,44 @@ ui <- fluidPage(
     )
   ),
 
-  # Tables row:
+  # Heatmap & Tree Species table -- used to be "Tables row" w/ "All Trees" table:
   fluidRow(
-    # All Trees table:
-    column(8,  
+    # # All Trees table: -- disabled
+    # column(8,  
+    #        div(class = "panel panel-default", 
+    #            style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+    #            fluidRow(
+    #              column(12,
+    #                div(
+    #                  style = "display: flex; align-items: center; white-space: nowrap;",
+ 
+    #                  div(
+    #                    style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
+    #                    h3("All Trees", style = "margin-top: 1px; margin-bottom: 10px;")
+    #                  ),
+ 
+    #                  div(
+    #                    style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
+    #                    textOutput("tree_count_text")
+    #                  ),
+ 
+    #                  div(
+    #                    style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
+    #                    actionButton("reset_tree", "Clear Selection", class = "btn btn-info btn-xs")
+    #                  )
+    #                )
+    #              )
+    #            ),
+    #            DTOutput("all_trees_table")
+    #        )
+    # ),
+
+    # Heatmap column:
+    column(8, 
            div(class = "panel panel-default", 
                style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               fluidRow(
-                 column(12,
-                   div(
-                     style = "display: flex; align-items: center; white-space: nowrap;",
- 
-                     div(
-                       style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
-                       h3("All Trees", style = "margin-top: 1px; margin-bottom: 10px;")
-                     ),
- 
-                     div(
-                       style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
-                       textOutput("tree_count_text")
-                     ),
- 
-                     div(
-                       style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
-                       actionButton("reset_tree", "Clear Selection", class = "btn btn-info btn-xs")
-                     )
-                   )
-                 )
-               ),
-               DTOutput("all_trees_table")
+               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("heatmap", height = "502px")
            )
     ),
 
@@ -338,26 +347,26 @@ ui <- fluidPage(
     )
   ),
 
-  # Bar Chart / Heatmap row:
-  fluidRow(
-    # Bar chart column:
-    column(5, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("height_distribution", height = "420px")
-           )
-    ),
+  # # Bar Chart / Heatmap row: -- disabled: I moved the heat map up to replace the now-disabled "All Trees" table
+  # fluidRow(
+  #   # Bar chart column:
+  #   column(5, 
+  #          div(class = "panel panel-default", 
+  #              style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+  #              h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
+  #              plotlyOutput("height_distribution", height = "420px")
+  #          )
+  #   ),
 
-    # Heatmap column:
-    column(7, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "420px")
-           )
-    )
-  ),
+  #   # # Heatmap column:
+  #   # column(7, 
+  #   #        div(class = "panel panel-default", 
+  #   #            style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+  #   #            h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+  #   #            plotlyOutput("heatmap", height = "420px")
+  #   #        )
+  #   # )
+  # ),
 
   # Footer row:
   fluidRow(
