@@ -389,7 +389,8 @@ ui <- fluidPage(
             " — Licensed under MIT."
           ),
           tags$p(
-            "\u00A9 2025 Derek Rodgers"
+            "\u00A9 2025 ",
+            tags$a(href = "https://github.com/derekrodgers/", target = "_blank", "Derek Rodgers")
           )
       )
     )
