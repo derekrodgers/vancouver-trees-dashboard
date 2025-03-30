@@ -2,3 +2,10 @@ libharfbuzz-dev
 libfribidi-dev
 libfreetype6-dev
 libpng-dev
+
+# for {terra}
+gdal-bin
+libgdal-dev
+libgeos-dev
+libproj-dev
+libsqlite3-dev
