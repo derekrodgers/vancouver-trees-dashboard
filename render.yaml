@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: vancouver-trees-dashboard
+    env: r
+    plan: free
+    buildCommand: Rscript install.R
+    startCommand: R -e "shiny::runApp('app.R', port = $PORT, host = '0.0.0.0')"
