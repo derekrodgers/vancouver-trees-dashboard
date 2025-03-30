@@ -19,261 +19,54 @@ library(leaflet.extras)
 # Deploy location:
 #     https://databyderek.shinyapps.io/vancouver-trees-dashboard/
 
-# Read in binary data file in fst format (faster than CSV). We generated this in notebooks/eda.Rmd
+# Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
-google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
 
 ui <- fluidPage(
-  # Browser title
+  # Browser page title
   title = "Vancouver Trees Dashboard",
-  
-  tags$head(
-    tags$style(HTML("
-      #tree_table table.dataTable tbody tr:hover,
-      #all_trees_table table.dataTable tbody tr:hover {
-        cursor: pointer;
-      }
-    "))
-  ),
 
+  # Favicon
+  tags$head(tags$link(rel = "shortcut icon", type = "image/png", href = "favicon.png")),
+
+  # CSS
   tags$head(
+    # When Shiny is busy, fade out the tree_map container:
     tags$style(HTML("
-      /* When Shiny is busy, fade out the #tree_map container. */
       .shiny-busy #tree_map {
         opacity: 0.3;      /* or 0.5, tweak to taste */
         pointer-events: none;
         transition: opacity 0.25s;
       }
-    "))
-  ),
+    ")),
 
-  tags$head(
+    # Enable a fullscreen button on the map:
     tags$link(rel = "stylesheet", href = "https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css"),
     tags$script(src = "https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js")
   ),
 
+  # JavaScript
   tags$head(
+    # Source Street View API key from the text file:
+    google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE)),
+    tags$script(src = paste0("https://maps.googleapis.com/maps/api/js?key=", google_api_key, "&libraries=geometry")),
+    
+    # Ensure cursor is a link pointer when hovering over table rows:
+    tags$style(HTML("
+      #tree_table table.dataTable tbody tr:hover,
+      #all_trees_table table.dataTable tbody tr:hover {
+        cursor: pointer;
+      }
+    ")),
+
+    # Ensure dropdowns don't appear behind other UI elements:
     tags$style(HTML("
       .bootstrap-select .dropdown-menu {
         z-index: 2000 !important;
       }
-    "))
-  ),
+    ")),
 
-  # Title and filters card
-  fluidRow(
-    column(12, 
-          div(class = "panel panel-default", 
-              style = "background-color: #f8f9fa; padding: 10px 20px; border-radius: 8px; margin-top: 5px;",
-              
-              # Title Row
-              fluidRow(
-                style = "margin-bottom: 15px;",
-                column(12,
-                  div(
-                    style = "display: flex; align-items: center;",
- 
-                    h2(
-                      "Vancouver Trees Dashboard", 
-                      style = "margin: 0; text-align: left; line-height: 1.2; margin-right: 10px;"
-                    ),
- 
-                    tags$img(
-                      src = "favicon.png", 
-                      height = "30px"
-                    )
-                  )
-                )
-              ),
-              # Filters & Reset Button Row
-              fluidRow(
-                    column(2, pickerInput("neighbourhood", "Neighbourhood",
-                                          choices = sort(unique(street_trees$NEIGHBOURHOOD_NAME)),
-                                          multiple = TRUE,
-                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                          width = "100%")),
-                    column(2, pickerInput("binomial_name", "Binomial Name",
-                                          choices = sort(unique(street_trees$Binomial_Name)),
-                                          multiple = TRUE,
-                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                          width = "100%")),
-                    column(2, pickerInput("common_name", "Common Names",
-                                          choices = sort(unique(street_trees$COMMON_NAME)),
-                                          multiple = TRUE,
-                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                          width = "100%")),
-                    column(2, pickerInput("height_range", "Height Range",
-                                          choices = levels(street_trees$HEIGHT_RANGE),
-                                          multiple = TRUE,
-                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                          width = "100%")),
-                    column(2, pickerInput("interesting_trees", "⭐ Interesting Trees ⭐",
-                                          choices = c("🌸 Cherry & Plum Trees", "🌴 Palm Trees", "🌳 All Park Trees", "🏞️ Stanley Park Trees", "🌷 VanDusen Botanical Garden"),
-                                          multiple = TRUE,
-                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
-                                          width = "100%")),
-                    column(2, div(style = "text-align: right; margin-top: 25px;",
-                                  actionButton("reset_filters", "Reset Filters", 
-                                              class = "btn-danger",
-                                              style = "font-weight: bold; font-size: 14.5px; padding: 8px 14px;")))
-              )
-          )
-    )
-  ),
-
-  # Map Row
-  fluidRow(
-    # Map Column
-    column(8, 
-      div(class = "panel panel-default", 
-          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-          fluidRow(
-            column(12,
-              div(
-                style = "display: flex; flex-wrap: wrap; align-items: center;",
-                
-                div(
-                  style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
-                  h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;")
-                ),
-                
-                div(
-                  style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
-                  textOutput("map_tree_count_text")
-                ),
-                
-                div(
-                  style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
-                  actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-xs"),
-                  actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-xs", style = "margin-left: 10px;")
-                )
-              )
-            )
-          ),
-          div(leafletOutput("tree_map", height = "520px")
-          )
-      )
-    ),
-    # Street View Column
-    column(4,
-      div(class = "panel panel-default",
-          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-          h3("Street View", style = "margin-top: 1px; margin-bottom: 15px;"),
-          # Again, fix the Street View container to 500px
-          tags$div(id = "street_view_container", style = "width: 100%; height: 521px;")
-      )
-    )
-  ),
-
-  # Tables row
-  fluidRow(
-    column(8,  
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               fluidRow(
-                 column(12,
-                   div(
-                     style = "display: flex; align-items: center; white-space: nowrap;",
- 
-                     div(
-                       style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
-                       h3("All Trees", style = "margin-top: 1px; margin-bottom: 10px;")
-                     ),
- 
-                     div(
-                       style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
-                       textOutput("tree_count_text")
-                     ),
- 
-                     div(
-                       style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
-                       actionButton("reset_tree", "Clear Selection", class = "btn btn-info btn-xs")
-                     )
-                   )
-                 )
-               ),
-               DTOutput("all_trees_table")
-           )
-    ),
-    column(4,  
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               fluidRow(
-                 column(12,
-                   div(
-                     style = "display: flex; flex-wrap: wrap; align-items: center;",
- 
-                     div(
-                       style = "flex: 0 0 auto; margin-right: 15px;",
-                       h3("Tree Species", style = "margin-top: 5px; margin-bottom: 10px;")
-                     ),
- 
-                     div(
-                       style = "flex: 1 1 auto; text-align: center; font-size: 14px;",
-                       textOutput("species_count_text")
-                     ),
- 
-                     div(
-                       style = "flex: 0 0 auto; text-align: right;",
-                       actionButton("reset_species", "Clear Selection", class = "btn btn-info btn-xs")
-                     )
-                   )
-                 )
-               ),
-               DTOutput("tree_table")
-           )
-    )
-  ),
-
-  # Heatmap / bar chart row
-  fluidRow(
-    column(5, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("height_distribution", height = "420px")
-           )
-    ),
-    column(7, 
-           div(class = "panel panel-default", 
-               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
-               plotlyOutput("heatmap", height = "420px")
-           )
-    )
-  ),
-
-  # Footer row
-  fluidRow(
-    column(12,
-      div(
-        style = "padding: 3px; text-align: left",
-          tags$p(
-            "Dataset: ",
-            tags$a(href = "https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name", target = "_blank", "Vancouver Open Data Portal - Public Trees")
-          ),
-          # tags$p(
-          #   tags$a(href = "https://github.com/derekrodgers/vancouver-trees-dashboard", "GitHub Repository")
-          # ),
-        tags$p(
-          "©",
-          format(Sys.Date(), "%Y"),
-          tags$a(
-            href = "https://github.com/derekrodgers", 
-            target = "_blank", 
-            "Derek Rodgers"
-          ),
-          "— Licensed under MIT."
-        )
-      )
-    )
-  ),
-  # Favicon
-  tags$head(tags$link(rel = "shortcut icon", type = "image/png", href = "favicon.png")),
-
-  # JS for street view
-  tags$head(
-    tags$script(src = paste0("https://maps.googleapis.com/maps/api/js?key=", google_api_key, "&libraries=geometry")),
+    # JS for street view:
     tags$script(HTML('
       Shiny.addCustomMessageHandler("updateStreetView", function(message) {
         var location = new google.maps.LatLng(message.lat, message.lon);
@@ -323,58 +116,268 @@ ui <- fluidPage(
         // Insert the placeholder message.
         container.innerHTML = "<div style=\'font-size:16px; padding:10px;\'>Select a single tree.</div>";
       });
+    ')),
+
+    # Fix popup / zoom conflict:
+    tags$script(HTML('
+      // Custom handler to open popup after zoom
+      Shiny.addCustomMessageHandler("openPopupAfterZoom", function(message) {
+        var map = window.treeMap;
+        if (!map) return;
+        // Capture current view if not already saved
+        if (!window.prevView) {
+          window.prevView = {
+            center: map.getCenter(),
+            zoom: map.getZoom()
+          };
+        }
+        map.once("zoomend", function() {
+          var markerFound = null;
+          map.eachLayer(function(layer) {
+            if (layer.options && layer.options.layerId == message.id) {
+              markerFound = layer;
+            }
+          });
+          if (markerFound) {
+            markerFound.bindPopup(message.content).openPopup();
+            // Attach listener on this marker for popup close
+            markerFound.on("popupclose", function(e) {
+              Shiny.setInputValue("popup_closed", new Date().getTime(), {priority: "event"});
+            });
+          }
+        });
+      });
+    
+      Shiny.addCustomMessageHandler("saveCurrentMapView", function(message) {
+        var map = window.treeMap;
+        if (map) {
+          window.prevView = {
+            center: map.getCenter(),
+            zoom: map.getZoom()
+          };
+        }
+      });
+    
+      // Custom handler to restore previous map view
+      Shiny.addCustomMessageHandler("restorePrevMapView", function(message) {
+        var map = window.treeMap;
+        if (map && window.prevView) {
+          map.setView(window.prevView.center, window.prevView.zoom);
+          window.prevView = null;  // Clear stored view after restoration
+        }
+      });
     '))
   ),
 
-  # Fix popup / zoom conflict
-  tags$script(HTML('
-    // Custom handler to open popup after zoom
-    Shiny.addCustomMessageHandler("openPopupAfterZoom", function(message) {
-      var map = window.treeMap;
-      if (!map) return;
-      // Capture current view if not already saved
-      if (!window.prevView) {
-        window.prevView = {
-          center: map.getCenter(),
-          zoom: map.getZoom()
-        };
-      }
-      map.once("zoomend", function() {
-        var markerFound = null;
-        map.eachLayer(function(layer) {
-          if (layer.options && layer.options.layerId == message.id) {
-            markerFound = layer;
-          }
-        });
-        if (markerFound) {
-          markerFound.bindPopup(message.content).openPopup();
-          // Attach listener on this marker for popup close
-          markerFound.on("popupclose", function(e) {
-            Shiny.setInputValue("popup_closed", new Date().getTime(), {priority: "event"});
-          });
-        }
-      });
-    });
-  
-  Shiny.addCustomMessageHandler("saveCurrentMapView", function(message) {
-    var map = window.treeMap;
-    if (map) {
-      window.prevView = {
-        center: map.getCenter(),
-        zoom: map.getZoom()
-      };
-    }
-  });
-  
-    // Custom handler to restore previous map view
-    Shiny.addCustomMessageHandler("restorePrevMapView", function(message) {
-      var map = window.treeMap;
-      if (map && window.prevView) {
-        map.setView(window.prevView.center, window.prevView.zoom);
-        window.prevView = null;  // Clear stored view after restoration
-      }
-    });
-  '))
+  # Title and filters card:
+  fluidRow(
+    column(12, 
+          div(class = "panel panel-default", 
+              style = "background-color: #f8f9fa; padding: 10px 20px; border-radius: 8px; margin-top: 5px;",
+              # Title Row:
+              fluidRow(
+                style = "margin-bottom: 15px;",
+                column(12,
+                  div(
+                    style = "display: flex; align-items: center;",
+ 
+                    h2(
+                      "Vancouver Trees Dashboard", 
+                      style = "margin: 0; text-align: left; line-height: 1.2; margin-right: 10px;"
+                    ),
+ 
+                    tags$img(
+                      src = "favicon.png", 
+                      height = "30px"
+                    )
+                  )
+                )
+              ),
+
+              # Filters & Reset Button Row:
+              fluidRow(
+                    column(2, pickerInput("neighbourhood", "Neighbourhood",
+                                          choices = sort(unique(street_trees$NEIGHBOURHOOD_NAME)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("binomial_name", "Binomial Name",
+                                          choices = sort(unique(street_trees$Binomial_Name)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("common_name", "Common Names",
+                                          choices = sort(unique(street_trees$COMMON_NAME)),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("height_range", "Height Range",
+                                          choices = levels(street_trees$HEIGHT_RANGE),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, pickerInput("interesting_trees", "⭐ Interesting Trees ⭐",
+                                          choices = c("🌸 Cherry & Plum Trees", "🌴 Palm Trees", "🌳 All Park Trees", "🏞️ Stanley Park Trees", "🌷 VanDusen Botanical Garden"),
+                                          multiple = TRUE,
+                                          options = list(`actions-box` = TRUE, `live-search` = TRUE),
+                                          width = "100%")),
+                    column(2, div(style = "text-align: right; margin-top: 25px;",
+                                  actionButton("reset_filters", "Reset Filters", 
+                                              class = "btn-danger",
+                                              style = "font-weight: bold; font-size: 14.5px; padding: 8px 14px;")))
+              )
+          )
+    )
+  ),
+
+  # Map & Street View Row:
+  fluidRow(
+    # Map Column:
+    column(8, 
+      div(class = "panel panel-default", 
+          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          fluidRow(
+            column(12,
+              div(
+                style = "display: flex; flex-wrap: wrap; align-items: center;",
+                
+                div(
+                  style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
+                  h3("Tree Map", style = "margin-top: 1px; margin-bottom: 10px;")
+                ),
+                
+                div(
+                  style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
+                  textOutput("map_tree_count_text")
+                ),
+                
+                div(
+                  style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
+                  actionButton("reset_map", "Clear Selection", class = "btn btn-info btn-xs"),
+                  actionButton("reset_zoom", "Reset Zoom", class = "btn btn-info btn-xs", style = "margin-left: 10px;")
+                )
+              )
+            )
+          ),
+          div(leafletOutput("tree_map", height = "520px")
+          )
+      )
+    ),
+
+    # Street View Column:
+    column(4,
+      div(class = "panel panel-default",
+          style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
+          h3("Street View", style = "margin-top: 1px; margin-bottom: 15px;"),
+          # Again, fix the Street View container to 500px
+          tags$div(id = "street_view_container", style = "width: 100%; height: 521px;")
+      )
+    )
+  ),
+
+  # Tables row:
+  fluidRow(
+    # All Trees table:
+    column(8,  
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               fluidRow(
+                 column(12,
+                   div(
+                     style = "display: flex; align-items: center; white-space: nowrap;",
+ 
+                     div(
+                       style = "flex: 0 1 auto; margin-right: 15px; margin-bottom: 5px;",
+                       h3("All Trees", style = "margin-top: 1px; margin-bottom: 10px;")
+                     ),
+ 
+                     div(
+                       style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
+                       textOutput("tree_count_text")
+                     ),
+ 
+                     div(
+                       style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
+                       actionButton("reset_tree", "Clear Selection", class = "btn btn-info btn-xs")
+                     )
+                   )
+                 )
+               ),
+               DTOutput("all_trees_table")
+           )
+    ),
+
+    # Tree Species table:
+    column(4,  
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               fluidRow(
+                 column(12,
+                   div(
+                     style = "display: flex; flex-wrap: wrap; align-items: center;",
+ 
+                     div(
+                       style = "flex: 0 0 auto; margin-right: 15px;",
+                       h3("Tree Species", style = "margin-top: 5px; margin-bottom: 10px;")
+                     ),
+ 
+                     div(
+                       style = "flex: 1 1 auto; text-align: center; font-size: 14px;",
+                       textOutput("species_count_text")
+                     ),
+ 
+                     div(
+                       style = "flex: 0 0 auto; text-align: right;",
+                       actionButton("reset_species", "Clear Selection", class = "btn btn-info btn-xs")
+                     )
+                   )
+                 )
+               ),
+               DTOutput("tree_table")
+           )
+    )
+  ),
+
+  # Bar Chart / Heatmap row:
+  fluidRow(
+    # Bar chart column:
+    column(5, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Height Distribution", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("height_distribution", height = "420px")
+           )
+    ),
+
+    # Heatmap column:
+    column(7, 
+           div(class = "panel panel-default", 
+               style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
+               h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+               plotlyOutput("heatmap", height = "420px")
+           )
+    )
+  ),
+
+  # Footer row:
+  fluidRow(
+    column(12,
+      div(
+        style = "padding: 3px; text-align: left",
+          tags$p(
+            "Dataset: ",
+            tags$a(href = "https://opendata.vancouver.ca/explore/dataset/public-trees/information/?disjunctive.neighbourhood_name&disjunctive.on_street&disjunctive.species_name&disjunctive.common_name", target = "_blank", "Vancouver Open Data Portal - Public Trees")
+          ),
+          tags$p(
+            tags$a(href = "https://github.com/derekrodgers/vancouver-trees-dashboard", target = "_blank", "GitHub Repository"),
+            " — Licensed under MIT."
+          ),
+          tags$p(
+            "\u00A9 2025 Derek Rodgers"
+          )
+      )
+    )
+  ),
 )
 
 server <- function(input, output, session) {
@@ -549,7 +552,6 @@ server <- function(input, output, session) {
                       selected = intersect(input$common_name, available_common_name()))
   })
   
-
   # change behaviour of map popup's "x"
   observeEvent(input$popup_closed, {
     selected_tree(NULL)
@@ -661,7 +663,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # # Heatmap of Tree Count x Neighbourhood
+  # Heatmap of Tree Count x Neighbourhood
   output$heatmap <- renderPlotly({
     data <- filtered_data()
   
@@ -682,7 +684,7 @@ server <- function(input, output, session) {
     ggplotly(plot, tooltip = "text")  # tooltips
   })
 
-  # # Tree Height Distribution (All Neighbourhoods)
+  # Tree Height Distribution (All Neighbourhoods)
   output$height_distribution <- renderPlotly({
     data <- filtered_data() |>
       count(HEIGHT_RANGE)  # Compute counts beforehand
@@ -697,6 +699,7 @@ server <- function(input, output, session) {
     ggplotly(plot, tooltip = "text")  # tooltips
   })
 
+  # Map popup contents
   output$all_trees_table <- renderDT({
     data <- filtered_data() |>
       dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, LATITUDE, LONGITUDE) |>
