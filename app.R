@@ -11,7 +11,7 @@ library(later)
 library(raster)
 library(leaflet)
 library(leaflet.extras)
- 
+
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
 # To deploy to shinyapps:
