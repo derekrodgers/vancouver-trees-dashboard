@@ -14,10 +14,10 @@ library(leaflet.extras)
 
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
-# To deploy:
+# To deploy to shinyapps:
 #     rsconnect::deployApp(appDir = ".", appName = "vancouver-trees-dashboard")
 # Deploy location:
-#     https://derekrodgers.shinyapps.io/vancouver-trees-dashboard/
+#     https://databyderek.shinyapps.io/vancouver-trees-dashboard/
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/eda.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
