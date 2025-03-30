@@ -859,15 +859,24 @@ server <- function(input, output, session) {
         });
       }"
 
-      if(nrow(data) == 1) {
-        leafletProxy("tree_map", data = data) |>
-          clearMarkers() |>
-          clearMarkerClusters() |>
-        addMarkers(
+      add_tree_markers <- function(proxy, data, cluster_options = NULL) {
+        proxy |>
+          addMarkers(
             lng = ~LONGITUDE,
             lat = ~LATITUDE,
             layerId = ~TREE_ID,
-            clusterOptions = markerClusterOptions(
+            clusterOptions = cluster_options
+          )
+      }
+
+      if(nrow(data) == 1) {
+        leafletProxy("tree_map", data = data) |>
+          clearMarkers() |>
+          clearMarkerClusters()
+          add_tree_markers(
+            leafletProxy("tree_map", data = data),
+            data,
+            cluster_options = markerClusterOptions(
               disableClusteringAtZoom = 18,
               iconCreateFunction = JS(icon_create_string)
             )
@@ -876,12 +885,11 @@ server <- function(input, output, session) {
       } else {
         leafletProxy("tree_map", data = data) |>
           clearMarkers() |>
-          clearMarkerClusters() |>
-        addMarkers(
-            lng = ~LONGITUDE,
-            lat = ~LATITUDE,
-            layerId = ~TREE_ID,
-            clusterOptions = markerClusterOptions(
+          clearMarkerClusters()
+          add_tree_markers(
+            leafletProxy("tree_map", data = data),
+            data,
+            cluster_options = markerClusterOptions(
               disableClusteringAtZoom = 18,
               iconCreateFunction = JS(icon_create_string)
             )
