@@ -9,3 +9,4 @@ libgdal-dev
 libgeos-dev
 libproj-dev
 libsqlite3-dev
+libproj22
