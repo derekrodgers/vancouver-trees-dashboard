@@ -935,12 +935,15 @@ server <- function(input, output, session) {
 
 }
 
-# Only enable autoreload if on Derek's computer
+# Use autoreload locally; bind to proper host/port in production
 if (grepl("^/Users/derek", getwd())) {
   options(shiny.autoreload = TRUE)
   app_options <- list(port = 3838)
 } else {
-  app_options <- list()
+  app_options <- list(
+    host = "0.0.0.0",
+    port = as.numeric(Sys.getenv("PORT", 8080))
+  )
 }
 
 shinyApp(ui, server, options = app_options)
