@@ -31,4 +31,4 @@ RUN R -e "renv::restore()"
 EXPOSE 8080
 
 # Run the app using the port Render provides
-CMD R -e "shiny::runApp('/app', host = '0.0.0.0', port = as.numeric(Sys.getenv('PORT')))"
+CMD ["Rscript", "-e", "shiny::runApp('/app', host = '0.0.0.0', port = as.numeric(Sys.getenv('PORT', 8080)))"]
