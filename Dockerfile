@@ -18,14 +18,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Shiny
-RUN R -e "install.packages('shiny', repos = 'https://cloud.r-project.org')"
+RUN R -e "install.packages('shiny', repos = 'https://packagemanager.posit.co/all/latest')"
 
 # Set working directory and copy app files
 WORKDIR /app
 COPY . .
 
 # Install R packages using renv
-RUN R -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+RUN R -e "install.packages('renv', repos = 'https://packagemanager.posit.co/all/latest')"
 RUN R -e "renv::restore()"
 
 EXPOSE 8080

@@ -24,6 +24,8 @@ library(leaflet.extras)
 #     docker build --no-cache -f Dockerfile -t vancouvertrees .
 #   To test locally:
 #     docker run -p 3838:8080 -e PORT=8080 vancouvertrees
+# Fly deploy:
+#   fly deploy --local-only
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
