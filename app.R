@@ -27,7 +27,13 @@ library(leaflet.extras)
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
-google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
+
+# Read API key from env var:
+google_api_key <- Sys.getenv("GOOGLE_API_KEY")
+# If we can't find it, that means the app is running locally:
+if (google_api_key == "") {
+  google_api_key <- trimws(readLines("google_api_key.txt", warn = FALSE))
+}
 
 ui <- fluidPage(
   # Browser page title
