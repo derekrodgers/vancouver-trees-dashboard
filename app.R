@@ -20,11 +20,13 @@ library(leaflet.extras)
 #     https://databyderek.shinyapps.io/vancouver-trees-dashboard/
 # Docker:
 #   To build:
+#     docker ps -a
+#     docker stop [CONTAINER_ID, if it's running]
 #     docker container prune
 #     docker build --no-cache -f Dockerfile -t vancouvertrees .
 #   To test locally:
 #     docker run -p 3838:8080 -e PORT=8080 vancouvertrees
-# Fly deploy:
+# Deploy to fly.io:
 #   fly deploy --local-only
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
