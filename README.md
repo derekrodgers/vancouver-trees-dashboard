@@ -19,7 +19,7 @@ The data used in this dashboard comes from the **City of Vancouver's Public Tree
 
 You can try the live version of the app here:
 
-🔗 **[Vancouver Trees Dashboard](https://vancouvertrees.databyderek.com/)**
+🔗 **[Vancouver Trees Dashboard](https://databyderek.com/vancouvertrees/)**
 
 ## Local Installation
 
