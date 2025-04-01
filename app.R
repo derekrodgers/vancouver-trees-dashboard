@@ -1,16 +1,12 @@
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
 library(fst)
 library(shiny)
 library(shinyWidgets)
-library(ggplot2)
 library(DT)
 library(plotly)
 library(later)
-
-# Map
-library(raster)
 library(leaflet)
-library(leaflet.extras)
 
 # To run locally, start an R console in the repo root and run:
 #     shiny::runApp("app.R")
@@ -22,12 +18,11 @@ library(leaflet.extras)
 #   To build:
 #     docker ps -a
 #     docker stop [CONTAINER_ID, if it's running]
+#     docker remove [CONTAINER_ID]
 #     docker container prune
-#     docker build --no-cache -f Dockerfile -t vancouvertrees .
-#   To test locally:
-#     docker run -p 3838:8080 -e PORT=8080 vancouvertrees
+#     docker build --no-cache --platform=linux/amd64 -t vancouvertrees .
 # Deploy to fly.io:
-#   fly deploy --local-only
+#   fly deploy --local-only --image vancouvertrees
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")

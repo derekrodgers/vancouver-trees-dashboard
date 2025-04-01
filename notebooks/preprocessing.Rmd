@@ -7,9 +7,12 @@ editor: visual
 Read in only the columns we need:
 
 ```{r}
-library(tidyverse)
+library(dplyr)
 library(fst)
 library(naniar)
+library(readr)
+library(stringr)
+library(tidyr)
 
 # Read only the columns we use
 street_trees <- read_csv2("../data/raw/street-trees.csv")

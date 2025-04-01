@@ -1,0 +1,35 @@
+# Git & RStudio
+.git
+.gitignore
+.Rhistory
+.Rproj.user
+*.Rproj
+
+# R session & system junk
+.RData
+.DS_Store
+
+# Large/unneeded data & notebooks
+*.csv
+*.tsv
+*.ipynb
+*.Rmd
+*.qmd
+notebooks/
+data/raw/
+
+# Python junk
+__pycache__/
+
+# Miscellaneous
+*.md
+*.txt
+
+# renv local state
+renv/python/
+renv/library/
+renv/staging/
+
+# Deployment-specific
+rsconnect/
+google_api_key.txt
