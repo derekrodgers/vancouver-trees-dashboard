@@ -395,7 +395,7 @@ ui <- fluidPage(
           ),
           tags$p(
             "\u00A9 2025 ",
-            tags$a(href = "https://github.com/derekrodgers/", target = "_blank", "Derek Rodgers")
+            tags$a(href = "https://databyderek.com/", target = "_blank", "Derek Rodgers")
           )
       )
     )
