@@ -14,15 +14,16 @@ library(leaflet)
 #     rsconnect::deployApp(appDir = ".", appName = "vancouver-trees-dashboard")
 # Shinyapps URL:
 #     https://databyderek.shinyapps.io/vancouver-trees-dashboard/
-# Docker:
-#   To build:
-#     docker ps -a
-#     docker stop [CONTAINER_ID, if it's running]
-#     docker remove [CONTAINER_ID]
-#     docker container prune
-#     docker build --no-cache --platform=linux/amd64 -t vancouvertrees .
+# Building docker image (for deployment to fly.io):
+#   docker ps -a
+#   docker stop [CONTAINER_ID, if it's running]
+#   docker remove [CONTAINER_ID, if it exists]
+#   docker container prune
+#   docker build --no-cache --platform=linux/amd64 -t vancouvertrees .
 # Deploy to fly.io:
 #   fly deploy --local-only --image vancouvertrees
+# fly.io URL:
+#   https://vancouvertrees.fly.dev/
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
