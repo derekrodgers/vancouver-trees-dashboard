@@ -54,4 +54,4 @@ At the R console, run:
 shiny::runApp("src/app.R")
 ```
 
-© 2025 [Derek Rodgers](https://github.com/derekrodgers). Licensed under MIT.
+© 2025 [Derek Rodgers](https://databyderek.com/). Licensed under MIT.
