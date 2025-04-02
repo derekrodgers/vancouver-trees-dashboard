@@ -918,7 +918,7 @@ server <- function(input, output, session) {
     selected_tree(NULL)
     later::later(function() {
       session$sendCustomMessage("restorePrevMapView", list())
-    }, delay = 2.5)
+    }, delay = 2.8)
   }
 
   # Implement reset_map_view() function for the "Reset Selection" button on the map
