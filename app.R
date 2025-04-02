@@ -10,7 +10,7 @@ library(leaflet)
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
-# Overcome a bug in shiny that causes Ajax datatables issues
+# Attempt to fix a bug in shiny that causes Ajax datatables issues on page load
 street_trees <- street_trees |>
                 mutate(TREE_ID = as.numeric(TREE_ID),
                        LATITUDE = as.numeric(LATITUDE),
@@ -711,7 +711,7 @@ server <- function(input, output, session) {
   })
 
   # Map popup contents
-  output$all_trees_table <- renderDT({
+  output$all_trees_table <- DT::renderDT({
     data <- filtered_data() |>
       dplyr::select(TREE_ID, Binomial_Name, COMMON_NAME, NEIGHBOURHOOD_NAME, HEIGHT_RANGE, LATITUDE, LONGITUDE) |>
       mutate(
@@ -742,10 +742,10 @@ server <- function(input, output, session) {
                 searchHighlight = TRUE,
                 scrollY = "370px"
               ))
-  })
+  }, server = FALSE)
 
   # Tree species count table
-  output$tree_table <- renderDT({
+  output$tree_table <- DT::renderDT({
     common_name_trucation_chars <- 45
     data <- filtered_data() |>
       group_by(Binomial_Name, COMMON_NAME) |>
