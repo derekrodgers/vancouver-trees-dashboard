@@ -10,6 +10,12 @@ library(leaflet)
 
 # Read in binary data file in fst format (faster than CSV). We generated this in notebooks/preprocessing.Rmd
 street_trees <- read_fst("data/processed/street-trees.fst")
+# Overcome a bug in shiny that causes Ajax datatables issues
+street_trees <- street_trees |>
+                mutate(TREE_ID = as.numeric(TREE_ID),
+                       LATITUDE = as.numeric(LATITUDE),
+                       LONGITUDE = as.numeric(LONGITUDE))
+
 
 # Read API key from env var:
 google_api_key <- Sys.getenv("GOOGLE_API_KEY")
@@ -739,8 +745,8 @@ server <- function(input, output, session) {
   })
 
   # Tree species count table
-  common_name_trucation_chars <- 45
   output$tree_table <- renderDT({
+    common_name_trucation_chars <- 45
     data <- filtered_data() |>
       group_by(Binomial_Name, COMMON_NAME) |>
       summarise(Count_Common_Name = n(), .groups = "drop") |>
