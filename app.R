@@ -562,14 +562,6 @@ server <- function(input, output, session) {
                       choices = available_common_name(),
                       selected = intersect(input$common_name, available_common_name()))
   })
-  
-  # change behaviour of map popup's "x"
-  observeEvent(input$popup_closed, {
-    selected_tree(NULL)
-    later::later(function() {
-      session$sendCustomMessage("restorePrevMapView", list())
-    }, delay = 0.2)
-  })
 
   observeEvent(input$reset_filters, {
     updatePickerInput(session, "neighbourhood", selected = character(0))
@@ -922,11 +914,21 @@ server <- function(input, output, session) {
     }
   })
 
-  observeEvent(input$reset_map, {
+  reset_map_view <- function() {
     selected_tree(NULL)
     later::later(function() {
       session$sendCustomMessage("restorePrevMapView", list())
-    }, delay = 0.2)
+    }, delay = 2.5)
+  }
+
+  # Implement reset_map_view() function for the "Reset Selection" button on the map
+  observeEvent(input$reset_map, {
+    reset_map_view()
+  })
+
+  # change behaviour of map popup's "x" to do the same
+  observeEvent(input$popup_closed, {
+    reset_map_view()
   })
 
   observeEvent(input$reset_zoom, {
