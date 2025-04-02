@@ -780,7 +780,7 @@ server <- function(input, output, session) {
                 searchHighlight = TRUE,
                 scrollY = "340px"
               ))
-  })
+  }, server = FALSE)
 
   # Handle species selection from table clicks
   observeEvent(input$tree_table_rows_selected, {
