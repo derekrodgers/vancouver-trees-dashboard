@@ -6,8 +6,7 @@ The **Vancouver Trees Dashboard** is an interactive R Shiny app that has:
 - A live map that displays all tree locations, reactive to all filters.
 - Reactive Google Street View, allowing a visual perspective on each tree.
 - A table displaying aggreate tree counts by species.
-- An "All Trees" table.
-- Height distribution charts: (i) heights across all neighbourhoods and (ii) neighbourhoods x height category.
+- Heat map of neighbourhoods x height category.
 
 ## Dataset
 
@@ -21,7 +20,7 @@ You can try the live version of the app here:
 
 🔗 **[Vancouver Trees Dashboard](https://databyderek.com/vancouvertrees/)**
 
-## Local Installation
+## Running the App Locally
 
 If you'd like to run this app locally, follow these steps:
 
