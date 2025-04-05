@@ -1,5 +1,5 @@
 ---
-title: "EDA: Street Trees"
+title: "Preprocessing: Vancouver Trees"
 format: html
 editor: visual
 ---
@@ -14,7 +14,6 @@ library(readr)
 library(stringr)
 library(tidyr)
 
-# Read only the columns we use
 street_trees <- read_csv2("../data/raw/street-trees.csv")
 ```
 
@@ -133,7 +132,7 @@ Looks like in the newest update to their dataset, they've fixed the missing lat/
 #   filter(!is.na(LATITUDE) & !is.na(LONGITUDE))
 ```
 
-Let's do our usual preprocessing steps to clean up the data. We will also add a pre-computed bool column for the trees in VanDusen Botanical Garden so we don't have to do an expensive filtering step every time the user selects that option in the dropdown.
+Let's do our usual preprocessing steps to clean up the data. We will also add a pre-computed bool column for the trees in VanDusen and Stanley Park, so we don't have to do an expensive filtering step every time the user selects those option in the dropdown.
 
 ```{r}
 street_trees <- street_trees |>
@@ -180,7 +179,7 @@ street_trees <- street_trees |>
                              LATITUDE  >= 49.23785042226124 &
                              LATITUDE  <= 49.241214933282045,
     
-    # New Stanley Park logic:
+    # Stanley Park logic:
     stanley_park = NEIGHBOURHOOD_NAME == "[Missing Neighbourhood]" &
                    PARK_TREE == TRUE &
                    LATITUDE > 49.289422389857215
