@@ -2,11 +2,11 @@
 
 The **Vancouver Trees Dashboard** is an interactive [R Shiny app](https://en.wikipedia.org/wiki/Shiny_(web_framework)) that has:
 
-- Filters for public trees by neighbourhood, height category, binomial species name, and common name.
-- A live map that displays all tree locations, reactive to all filters.
-- Reactive Google Street View, allowing a visual perspective on each tree.
-- A table displaying aggreate tree counts by species.
-- Heatmap table of neighbourhood by height category.
+- Filters for trees by neighbourhood, height category, species name, and common name.
+- A [live map](https://en.wikipedia.org/wiki/OpenStreetMap) that displays tree density, reactive to all filters.
+- Reactive Google Street View, giving a visual perspective on any selected tree.
+- A table of tree counts by species, searchable and sortable.
+- A heatmap table of tree height by neighbourhood.
 
 ## Dataset
 
