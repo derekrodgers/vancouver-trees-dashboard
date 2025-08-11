@@ -22,7 +22,7 @@ You can try the live app here:
 
 ## Running the App Locally
 
-If you'd like to run this app locally, follow these steps:
+If you'd like to run the app locally, follow these steps:
 
 ### 1. Clone the Repository
 
