@@ -249,7 +249,7 @@ ui <- fluidPage(
                 
                 div(
                   style = "flex: 1 1 auto; text-align: center; font-size: 14px; margin-bottom: 5px;",
-                  textOutput("map_tree_count_text")
+                  textOutput("tree_count_text")
                 ),
                 
                 div(
@@ -634,19 +634,6 @@ server <- function(input, output, session) {
   ")
   })
 
-  # # Satellite imagery map
-  # output$tree_map <- renderLeaflet({
-  #   leaflet(options = leafletOptions(maxZoom = 21)) |>
-  #     addProviderTiles(providers$Esri.WorldImagery, options = providerTileOptions(maxZoom = 21)) |>
-  #     setView(lng = -123.1216, lat = 49.2827, zoom = 12) |> 
-  #     htmlwidgets::onRender("
-  #       function(el, x) {
-  #         window.treeMap = this;
-  #         this.addControl(new L.Control.Fullscreen());
-  #       }
-  #     ")
-  # })
-
   # Street view
   observe({
     req(selected_tree())  # Only proceed when a tree is selected
@@ -812,13 +799,6 @@ server <- function(input, output, session) {
   })
   
   output$tree_count_text <- renderText({
-    num_trees <- filtered_data() |>
-      nrow()
-    paste("Total Trees:", format(num_trees, big.mark = ","))
-  })
-
-  # Is this redundant with the above?
-  output$map_tree_count_text <- renderText({
     num_trees <- filtered_data() |>
       nrow()
     paste("Total Trees:", format(num_trees, big.mark = ","))

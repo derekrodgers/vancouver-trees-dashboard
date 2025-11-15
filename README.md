@@ -50,7 +50,7 @@ renv::restore()
 At the R console, run:
 
 ```r
-shiny::runApp("src/app.R")
+shiny::runApp("app.R")
 ```
 
 © 2025 [Derek Rodgers](https://databyderek.com/). Licensed under MIT.
