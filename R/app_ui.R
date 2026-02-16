@@ -38,7 +38,7 @@ app_ui <- function(google_api_key, street_trees) {
             div(
               style = "display: flex; align-items: center; margin-bottom: 15px;",
               h3("Street View", style = "margin-top: 1px; margin-bottom: 0px; flex: 1 1 auto;"),
-              disabled(actionButton("clear_tree_selection", "Clear Selection",
+              disabled(actionButton("clear_selected_tree", "Clear Selected Tree",
                                    class = "btn btn-info btn-xs"))
             ),
             tags$div(id = "street_view_container", style = "width: 100%; height: 521px;")

@@ -16,7 +16,7 @@ mod_species_table_ui <- function(id) {
             ),
             div(
               style = "flex: 0 0 auto; text-align: right;",
-              actionButton(ns("reset_species"), "Clear Selection", class = "btn btn-info btn-xs")
+              actionButton(ns("reset_species_filters"), "Reset Species Filters", class = "btn btn-info btn-xs")
             )
           )
         )
@@ -25,7 +25,7 @@ mod_species_table_ui <- function(id) {
   )
 }
 
-mod_species_table_server <- function(id, filtered_data, selected_species, selected_tree) {
+mod_species_table_server <- function(id, filtered_data, selected_species, selected_tree, reset_species_pickers) {
   moduleServer(id, function(input, output, session) {
     output$tree_table <- DT::renderDT({
       common_name_trucation_chars <- 45
@@ -82,9 +82,11 @@ mod_species_table_server <- function(id, filtered_data, selected_species, select
       }
     })
 
-    # Reset species selection
-    observeEvent(input$reset_species, {
+    # Reset species filters — clears species selection, deselects table rows,
+    # and clears the binomial_name and common_name pickers in the filters module.
+    observeEvent(input$reset_species_filters, {
       selected_species(NULL)
+      reset_species_pickers()
       proxy <- dataTableProxy("tree_table")
       selectRows(proxy, integer(0))
     })

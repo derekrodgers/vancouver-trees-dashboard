@@ -23,17 +23,17 @@ app_server <- function(street_trees) {
     # Map module (includes Street View, tree count, popups, map controls)
     mod_map_server("map", street_trees, filtered_data, selected_tree, selected_species, session)
 
-    # Enable/disable Clear Selection button based on tree selection
+    # Enable/disable Clear Selected Tree button based on tree selection
     observe({
       if (is.null(selected_tree())) {
-        shinyjs::disable("clear_tree_selection")
+        shinyjs::disable("clear_selected_tree")
       } else {
-        shinyjs::enable("clear_tree_selection")
+        shinyjs::enable("clear_selected_tree")
       }
     })
 
-    # Clear Selection button — clears selected tree and restores previous map view
-    observeEvent(input$clear_tree_selection, {
+    # Clear Selected Tree button — clears selected tree and restores previous map view
+    observeEvent(input$clear_selected_tree, {
       selected_tree(NULL)
       later::later(function() {
         session$sendCustomMessage("restorePrevMapView", list())
@@ -44,6 +44,6 @@ app_server <- function(street_trees) {
     mod_heatmap_server("heatmap", filtered_data)
 
     # Species table module
-    mod_species_table_server("species", filtered_data, selected_species, selected_tree)
+    mod_species_table_server("species", filtered_data, selected_species, selected_tree, filters$reset_species_pickers)
   }
 }

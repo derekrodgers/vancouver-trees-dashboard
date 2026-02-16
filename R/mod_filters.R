@@ -211,9 +211,16 @@ mod_filters_server <- function(id, street_trees, selected_species, selected_tree
       return(data)
     })
 
-    # Return base_filtered_data for use by the orchestrator
+    # Clear species-related pickers (called by species table reset button)
+    reset_species_pickers <- function() {
+      updatePickerInput(session, "binomial_name", selected = character(0))
+      updatePickerInput(session, "common_name", selected = character(0))
+    }
+
+    # Return values for use by the orchestrator
     list(
-      base_filtered_data = base_filtered_data
+      base_filtered_data = base_filtered_data,
+      reset_species_pickers = reset_species_pickers
     )
   })
 }
