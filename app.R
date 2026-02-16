@@ -639,8 +639,8 @@ server <- function(input, output, session) {
     req(selected_tree())  # Only proceed when a tree is selected
     
     # Retrieve the selected tree's info
-    tree_info <- street_trees %>% 
-      filter(TREE_ID == selected_tree()) %>% 
+    tree_info <- street_trees |>
+      filter(TREE_ID == selected_tree()) |>
       slice(1)
     
     # Send a custom message to update Street View
