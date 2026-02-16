@@ -3,6 +3,8 @@ app_ui <- function(google_api_key, street_trees) {
     # Browser page title
     title = "Vancouver Trees Dashboard",
 
+    useShinyjs(),
+
     tags$head(
       # Favicon
       tags$link(rel = "shortcut icon", type = "image/png", href = "favicon.png"),
@@ -33,7 +35,12 @@ app_ui <- function(google_api_key, street_trees) {
       column(4,
         div(class = "panel panel-default",
             style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); margin-top: 0px;",
-            h3("Street View", style = "margin-top: 1px; margin-bottom: 15px;"),
+            div(
+              style = "display: flex; align-items: center; margin-bottom: 15px;",
+              h3("Street View", style = "margin-top: 1px; margin-bottom: 0px; flex: 1 1 auto;"),
+              disabled(actionButton("clear_tree_selection", "Clear Selection",
+                                   class = "btn btn-info btn-xs"))
+            ),
             tags$div(id = "street_view_container", style = "width: 100%; height: 521px;")
         )
       )

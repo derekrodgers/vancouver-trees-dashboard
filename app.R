@@ -7,6 +7,7 @@ library(DT)
 library(plotly)
 library(later)
 library(leaflet)
+library(shinyjs)
 
 # Source all modules and utilities
 source("R/utils_data.R")

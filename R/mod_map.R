@@ -16,8 +16,7 @@ mod_map_ui <- function(id) {
             ),
             div(
               style = "flex: 0 1 auto; text-align: right; margin-left: auto; margin-bottom: 5px;",
-              actionButton(ns("reset_map"), "Clear Selection", class = "btn btn-info btn-xs"),
-              actionButton(ns("reset_zoom"), "Reset Zoom", class = "btn btn-info btn-xs", style = "margin-left: 10px;")
+              actionButton(ns("reset_zoom"), "Reset Zoom", class = "btn btn-info btn-xs")
             )
           )
         )
@@ -199,11 +198,6 @@ mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selec
         parent_session$sendCustomMessage("restorePrevMapView", list())
       }, delay = 2.8)
     }
-
-    # Clear Selection button
-    observeEvent(input$reset_map, {
-      reset_map_view()
-    })
 
     # Popup closed event (from JS via parent session)
     observeEvent(parent_session$input$popup_closed, {
