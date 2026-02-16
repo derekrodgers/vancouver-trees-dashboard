@@ -1,0 +1,16 @@
+/* When Shiny is busy, fade out the tree_map container */
+.shiny-busy #map-tree_map {
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+/* Ensure cursor is a link pointer when hovering over table rows */
+#species-tree_table table.dataTable tbody tr:hover {
+  cursor: pointer;
+}
+
+/* Ensure dropdowns don't appear behind other UI elements */
+.bootstrap-select .dropdown-menu {
+  z-index: 2000 !important;
+}
