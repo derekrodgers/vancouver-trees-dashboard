@@ -7,6 +7,9 @@ app_server <- function(street_trees) {
     # Filters module — returns base_filtered_data reactive
     filters <- mod_filters_server("filters", street_trees, selected_species, selected_tree)
 
+    # Boolean mapping state to prevent fitBounds zooming when Tree is deselected
+    freeze_map_bounds <- reactiveVal(FALSE)
+
     # Combine base filtered data with species/tree selection
     filtered_data <- reactive({
       data <- filters$base_filtered_data()
@@ -21,7 +24,7 @@ app_server <- function(street_trees) {
     })
 
     # Map module (includes Street View, tree count, popups, map controls)
-    mod_map_server("map", street_trees, filtered_data, selected_tree, selected_species, session)
+    mod_map_server("map", street_trees, filtered_data, selected_tree, selected_species, session, freeze_map_bounds)
 
     # Enable/disable Clear Selected Tree button based on tree selection
     observe({
@@ -34,10 +37,8 @@ app_server <- function(street_trees) {
 
     # Clear Selected Tree button — clears selected tree and restores previous map view
     observeEvent(input$clear_selected_tree, {
+      freeze_map_bounds(TRUE)
       selected_tree(NULL)
-      later::later(function() {
-        session$sendCustomMessage("restorePrevMapView", list())
-      }, delay = 2.8)
     })
 
     # Heatmap module

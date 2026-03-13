@@ -25,9 +25,8 @@ mod_map_ui <- function(id) {
   )
 }
 
-mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selected_species, parent_session) {
+mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selected_species, parent_session, freeze_map_bounds) {
   moduleServer(id, function(input, output, session) {
-    restoring_view <- reactiveVal(FALSE)
 
     show_tree_popup <- function(tree_id, save_view = FALSE) {
       selected_tree(tree_id)
@@ -111,7 +110,6 @@ mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selec
 
     # Main map update observer
     observe({
-      if (restoring_view()) return()
 
       data <- filtered_data()
 
@@ -163,18 +161,26 @@ mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selec
           ) |>
             setView(lng = data$LONGITUDE, lat = data$LATITUDE, zoom = 15)
         } else {
-          leafletProxy("tree_map", data = data) |>
+          proxy <- leafletProxy("tree_map", data = data) |>
             clearMarkers() |>
             clearMarkerClusters()
-          add_tree_markers(
-            leafletProxy("tree_map", data = data),
+            
+          proxy <- add_tree_markers(
+            proxy,
             data,
             cluster_options = markerClusterOptions(
               disableClusteringAtZoom = 18,
               iconCreateFunction = JS(icon_create_string)
             )
-          ) |>
-            fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+          )
+
+          should_freeze <- isolate(freeze_map_bounds())
+          if (!should_freeze) {
+             proxy |> fitBounds(lng1 = minLng, lat1 = minLat, lng2 = maxLng, lat2 = maxLat)
+          } else {
+             freeze_map_bounds(FALSE) # Reset after one use
+             parent_session$sendCustomMessage("restorePrevMapView", list())
+          }
         }
       } else {
         leafletProxy("tree_map") |>
@@ -193,10 +199,8 @@ mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selec
     })
 
     reset_map_view <- function() {
+      freeze_map_bounds(TRUE)
       selected_tree(NULL)
-      later::later(function() {
-        parent_session$sendCustomMessage("restorePrevMapView", list())
-      }, delay = 2.8)
     }
 
     # Popup closed event (from JS via parent session)
