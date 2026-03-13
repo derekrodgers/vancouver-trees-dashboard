@@ -79,18 +79,19 @@ Shiny.addCustomMessageHandler("openPopupAfterZoom", function(message) {
 Shiny.addCustomMessageHandler("saveCurrentMapView", function(message) {
   var map = window.treeMap;
   if (map) {
-    window.prevView = {
-      center: map.getCenter(),
-      zoom: map.getZoom()
-    };
+    if (!window.prevView) {
+      window.prevView = {
+        center: map.getCenter(),
+        zoom: map.getZoom()
+      };
+    }
   }
 });
 
-// Custom handler to restore previous map view
 Shiny.addCustomMessageHandler("restorePrevMapView", function(message) {
   var map = window.treeMap;
   if (map && window.prevView) {
     map.setView(window.prevView.center, window.prevView.zoom);
-    window.prevView = null;  // Clear stored view after restoration
+    window.prevView = null;
   }
 });
