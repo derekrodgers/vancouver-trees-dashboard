@@ -77,8 +77,13 @@ mod_species_table_server <- function(id, filtered_data, selected_species, select
 
       if (!is.null(selected_row) && length(selected_row) > 0 && selected_row <= nrow(displayed_data)) {
         species <- displayed_data$Binomial_Name[selected_row]
-        selected_species(species)
-        selected_tree(NULL)
+        
+        # Only update if the selected species has changed.
+        # This prevents auto-restored selections from clearing a selected tree during table re-renders.
+        if (!identical(species, selected_species())) {
+          selected_species(species)
+          selected_tree(NULL)
+        }
       }
     })
 

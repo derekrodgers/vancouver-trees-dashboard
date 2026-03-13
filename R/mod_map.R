@@ -30,7 +30,6 @@ mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selec
 
     show_tree_popup <- function(tree_id, save_view = FALSE) {
       selected_tree(tree_id)
-      selected_species(NULL)
 
       tree_info <- filtered_data() |> filter(TREE_ID == tree_id) |> slice(1)
 
