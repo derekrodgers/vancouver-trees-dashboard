@@ -54,3 +54,4 @@ rsconnect/
 # Personal deploy instructions
 DEPLOYING.md
 fly.toml
+flydeploy.sh
