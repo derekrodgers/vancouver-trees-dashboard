@@ -46,9 +46,19 @@ mod_heatmap_server <- function(id, filtered_data, set_filters) {
         layout(
           xaxis = list(title = "Height Range"),
           yaxis = list(title = "Neighbourhood"),
-          dragmode = "pan"
+          dragmode = FALSE
         ) |>
-        event_register("plotly_click")
+        event_register("plotly_click") |>
+        htmlwidgets::onRender("
+          function(el) {
+            function setPointer() {
+              var drag = el.querySelector('.nsewdrag');
+              if (drag) drag.style.cursor = 'pointer';
+            }
+            setPointer();
+            el.on('plotly_afterplot', setPointer);
+          }
+        ")
     })
 
     # When a heatmap cell is clicked, apply filters
