@@ -217,10 +217,17 @@ mod_filters_server <- function(id, street_trees, selected_species, selected_tree
       updatePickerInput(session, "common_name", selected = character(0))
     }
 
+    # Set neighbourhood + height_range filters from heatmap click
+    set_heatmap_filter <- function(neighbourhood, height_range) {
+      updatePickerInput(session, "neighbourhood", selected = neighbourhood)
+      updatePickerInput(session, "height_range", selected = height_range)
+    }
+
     # Return values for use by the orchestrator
     list(
       base_filtered_data = base_filtered_data,
-      reset_species_pickers = reset_species_pickers
+      reset_species_pickers = reset_species_pickers,
+      set_heatmap_filter = set_heatmap_filter
     )
   })
 }
