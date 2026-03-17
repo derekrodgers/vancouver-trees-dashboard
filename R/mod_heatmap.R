@@ -2,12 +2,19 @@ mod_heatmap_ui <- function(id) {
   ns <- NS(id)
   div(class = "panel panel-default",
       style = "background-color: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);",
-      h3("Tree Height by Neighbourhood", style = "margin-top: 1px; margin-bottom: 1px;"),
+      div(
+        style = "display: flex; align-items: center; margin-bottom: 4px;",
+        div(style = "flex: 1;",
+            h3("Tree Height by Neighbourhood", style = "margin: 0;")),
+        div(style = "flex: 0 0 auto;",
+            actionButton(ns("reset_heatmap_filters"), "Reset Height & Neighbourhood",
+                         class = "btn btn-info btn-xs"))
+      ),
       plotlyOutput(ns("heatmap"), height = "502px")
   )
 }
 
-mod_heatmap_server <- function(id, filtered_data, set_filters) {
+mod_heatmap_server <- function(id, filtered_data, set_filters, reset_heatmap_filters) {
   moduleServer(id, function(input, output, session) {
     output$heatmap <- renderPlotly({
       data <- filtered_data()
@@ -67,6 +74,11 @@ mod_heatmap_server <- function(id, filtered_data, set_filters) {
       if (!is.null(click)) {
         set_filters(neighbourhood = click$y, height_range = click$x)
       }
+    })
+
+    # Reset button — clears neighbourhood and height_range filters
+    observeEvent(input$reset_heatmap_filters, {
+      reset_heatmap_filters()
     })
   })
 }

@@ -223,11 +223,18 @@ mod_filters_server <- function(id, street_trees, selected_species, selected_tree
       updatePickerInput(session, "height_range", selected = height_range)
     }
 
+    # Clear neighbourhood + height_range filters (called by heatmap reset button)
+    reset_heatmap_filters <- function() {
+      updatePickerInput(session, "neighbourhood", selected = character(0))
+      updatePickerInput(session, "height_range", selected = character(0))
+    }
+
     # Return values for use by the orchestrator
     list(
       base_filtered_data = base_filtered_data,
       reset_species_pickers = reset_species_pickers,
-      set_heatmap_filter = set_heatmap_filter
+      set_heatmap_filter = set_heatmap_filter,
+      reset_heatmap_filters = reset_heatmap_filters
     )
   })
 }

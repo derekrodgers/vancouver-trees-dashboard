@@ -42,7 +42,7 @@ app_server <- function(street_trees) {
     })
 
     # Heatmap module
-    mod_heatmap_server("heatmap", filtered_data, filters$set_heatmap_filter)
+    mod_heatmap_server("heatmap", filtered_data, filters$set_heatmap_filter, filters$reset_heatmap_filters)
 
     # Species table module
     mod_species_table_server("species", filtered_data, selected_species, selected_tree, filters$reset_species_pickers)
