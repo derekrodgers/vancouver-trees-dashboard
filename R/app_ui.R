@@ -13,8 +13,8 @@ app_ui <- function(google_api_key, street_trees) {
       tags$link(rel = "stylesheet", href = "styles.css"),
 
       # Leaflet fullscreen plugin
-      tags$link(rel = "stylesheet", href = "https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css"),
-      tags$script(src = "https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js"),
+      tags$link(rel = "stylesheet", href = "leaflet.fullscreen.css"),
+      tags$script(src = "Leaflet.fullscreen.min.js"),
 
       # Google Maps Street View API
       tags$script(src = paste0("https://maps.googleapis.com/maps/api/js?key=", google_api_key, "&libraries=geometry")),
