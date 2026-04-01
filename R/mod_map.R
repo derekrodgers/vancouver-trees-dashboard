@@ -74,8 +74,17 @@ mod_map_server <- function(id, street_trees, filtered_data, selected_tree, selec
 
     # Render initial map
     output$tree_map <- renderLeaflet({
-      leaflet() |>
-        addTiles() |>
+      leaflet(options = leafletOptions(maxZoom = 19)) |>
+        addTiles(
+          urlTemplate = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          group = "Satellite",
+          options = tileOptions(maxNativeZoom = 18, maxZoom = 19)
+        ) |>
+        addProviderTiles("OpenStreetMap", group = "Street") |>
+        addLayersControl(
+          baseGroups = c("Satellite", "Street"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) |>
         setView(lng = -123.1216, lat = 49.2827, zoom = 12) |>
         htmlwidgets::onRender("
       function(el, x) {
